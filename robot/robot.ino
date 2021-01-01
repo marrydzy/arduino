@@ -95,7 +95,7 @@ void setup()
   rotation.init(93, 0, 179, 20, &servo_rotation);
 
   servo_grabbler.attach(6);
-  grabbler.init(69, 45, 70, 5, &servo_grabbler);
+  grabbler.init(69, 55, 70, 7, &servo_grabbler);
   
   pinMode(7, INPUT_PULLUP);
   pinMode(LED_BUILTIN, OUTPUT);
