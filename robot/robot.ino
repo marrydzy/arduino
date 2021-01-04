@@ -1,14 +1,19 @@
 #include <Servo.h> //Biblioteka odpowiedzialna za serwa
 
+#define STOPPED -1
+#define MOVING   0
+#define BOUNCED  1
+
+
+bool master_stopped = false;
+
 
 class Motion {              // basic Motion class
-  int   initial_position;   // initial servo position
   int   servo_position;     // current servo position
+  int   stop_at;            // stop at position
+  int   move_direction;     // (current) move direction (-1: not moving, LOW, HIGH)
   float location;           // current location (float) 
   float step_delta;         // abs value of position increment per step (controls speed of the movement)
-  int   move_direction;     // (current) move direction (-1: not moving, LOW, HIGH)
-  int   initial_direction;  // movement starting direction
-  int   stop_at;            // stop at position
   int   lower_bound;        // stop/change movement direction when servo is at this lower_bound position
   int   upper_bound;        // stop/change movement direction when servo is at this upper_bound position
   bool  is_master;          // movement program manager flag 
@@ -18,10 +23,11 @@ class Motion {              // basic Motion class
   Servo *servo;             // servo pointer  
 
 public:
-  void init(int pos, bool master, Servo *srv, int servo_pin);
+  void init(int pos, Servo *srv, int servo_pin);
   void move_to(int stop_at, float velocity);
-  void cycle_to(int end_pos, float velocity, int cycles);
+  void cycle_to(int bound_at, float velocity, bool as_master, int cycles);
   int  update_position();
+  void complete_cycle_and_stop();
   void stop_moving();
   int  get_position();
   void synchronize();
@@ -41,21 +47,26 @@ void Motion::show_position() {
 }
 
 int Motion::get_position() {
-  return(initial_position);
+  return(servo_position);
+}
+
+void Motion::complete_cycle_and_stop() {
+  if (move_direction != -1) {
+    cycle_cntr = max_cycles - 1;
+  }
 }
 
 void Motion::stop_moving() {
-  move_direction = -1;  
+  move_direction = STOPPED;
 }
 
-void Motion::init(int pos, bool master, Servo *srv, int pin) {
-  initial_position = pos;
+void Motion::init(int pos, Servo *srv, int pin) {
   servo_position = pos;
-  lower_bound = 55;
+  lower_bound = 0;
   upper_bound = 179;
   move_direction = -1;
   location = float(pos);
-  is_master = master;
+  is_master = true;
   servo = srv;
   servo->attach(pin);
   servo->write(servo_position);
@@ -65,36 +76,36 @@ void Motion::move_to(int stop_pos, float velocity) {
   int dir = (stop_pos > servo_position)? HIGH : LOW;
   move_direction = dir;
   stop_at = stop_pos;
-  initial_direction = dir;
   step_delta = velocity;
-  cycle_cntr = 1;
+  cycle_cntr = 0;
   max_cycles = 1;
+  is_master = true;
 }
 
-void Motion::cycle_to(int end_position, float velocity, int cycles) {
+void Motion::cycle_to(int bound_at, float velocity, bool as_master = false, int cycles = 0) {
   location = (float)servo_position;
-  move_direction = (end_position > servo_position)? HIGH : LOW;
-  lower_bound = (move_direction == HIGH)? servo_position: end_position;
-  upper_bound = (move_direction == HIGH)? end_position: servo_position;
+  move_direction = (bound_at > servo_position)? HIGH : LOW;
+  lower_bound = (move_direction == HIGH)? servo_position: bound_at;
+  upper_bound = (move_direction == HIGH)? bound_at: servo_position;
   stop_at = servo_position;
-  initial_direction = move_direction;
   step_delta = velocity;
-  cycle_cntr = 1;
-  max_cycles = cycles;
+  cycle_cntr = 0;
+  max_cycles = cycles; // (as_master == true)? cycles : -1;   TODO
+  is_master = as_master;
 }
 
 int Motion::update_position() {
   int current_position = servo_position;
-  int ret_value = -1;
+  int ret_value = STOPPED;
   
   if (move_direction > -1) {
-    ret_value = 0;
+    ret_value = MOVING;
     if (move_direction == LOW) {
       location -= step_delta;
       servo_position = (int)round(location);
       if (servo_position == lower_bound) {
         move_direction = HIGH;
-        ret_value = 1;
+        ret_value = BOUNCED;
       }
     }
     else {
@@ -102,24 +113,21 @@ int Motion::update_position() {
       servo_position = (int)round(location);
       if (servo_position == upper_bound) {
         move_direction = LOW;
-        ret_value = 1;
+        ret_value = BOUNCED;
       }
     }
 
     if (servo_position != current_position) {
       servo->write(servo_position);
-      changed_position = true;
-    }
-    
-    if (is_master and changed_position) {
       if (servo_position == stop_at) {
+        cycle_cntr += 1;
         if (cycle_cntr == max_cycles) {
           move_direction = -1;
-          ret_value = -1;
-        }
-        else if (changed_position == true) {
-          cycle_cntr += 1;
-          changed_position = false;
+          ret_value = STOPPED;
+          if (is_master == true) {
+            master_stopped = true;
+            digitalWrite(LED_BUILTIN, LOW);
+          }
         }
       }
     }
@@ -136,12 +144,13 @@ public:
   void move_to(int dir, int stop_at);
   void cycle_to(int end_pos_left, int end_pos_right, float velocity, int cycles);
   void update_position();
+  
 };
 
 
 void Arm_Motion::init(int pos_left, Servo *srv_left, int pin_left, int pos_right, Servo *srv_right, int pin_right) {
-   l_servo.init(pos_left, true, srv_left, pin_left);
-   r_servo.init(pos_right, false, srv_right, pin_right);    // TODO
+   l_servo.init(pos_left, srv_left, pin_left);
+   r_servo.init(pos_right, srv_right, pin_right);
 }
 
 void Arm_Motion::update_position() {
@@ -149,10 +158,10 @@ void Arm_Motion::update_position() {
   int slave_status;
   master_status = l_servo.update_position();
   slave_status = r_servo.update_position();
-  if (master_status == -1 and slave_status >= 0) {
-    r_servo.stop_moving();
+  if (master_status == STOPPED and slave_status != STOPPED) {
+    r_servo.stop_moving();    // TODO
   }
-  if (master_status == 1) {
+  if (master_status == BOUNCED) {
     l_servo.synchronize();
     r_servo.synchronize();
     
@@ -162,7 +171,7 @@ void Arm_Motion::update_position() {
     Serial.print("slave_position: ");
     r_servo.show_position();
   }
-  return(master_status);
+  // return(master_status);
 }
 
 void Arm_Motion::cycle_to(int end_pos_left, int end_pos_right, float velocity, int cycles) {
@@ -173,8 +182,8 @@ void Arm_Motion::cycle_to(int end_pos_left, int end_pos_right, float velocity, i
   Serial.print("master velocity: "); Serial.println(velocity);
   Serial.print("slave velocity:  "); Serial.println(slave_velocity);
   
-  l_servo.cycle_to(end_pos_left, velocity, cycles);
-  r_servo.cycle_to(end_pos_right, slave_velocity, 1);
+  l_servo.cycle_to(end_pos_left, velocity, true, cycles);
+  r_servo.cycle_to(end_pos_right, slave_velocity);
   
 }
 
@@ -194,29 +203,31 @@ Arm_Motion arm;
 void setup() 
 { 
   pinMode(7, INPUT_PULLUP);
-  rotation.init(70, true, &servo_rotation, 9);
-  grabbler.init(68, true, &servo_grabbler, 6);
-  arm.init(179, &servo_left, 10, 150, &servo_right, 11);
-
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
+  rotation.init(93, &servo_rotation, 9);
+  grabbler.init(68, &servo_grabbler, 6);
+  arm.init(155, &servo_left, 10, 95, &servo_right, 11);
   Serial.begin(9600);
 } 
 
  
 void loop() 
 { 
-  int rotation_status;
-  int grabbler_status;
-  int arm_status;
-  
+  // int rotation_status;
+  // int grabbler_status;
+  // int arm_status;
+
   if (digitalRead(7) == LOW) {
     switch_pressed = true;
   }
   else {
     if (switch_pressed == true) {
       switch_pressed = false;
-      arm.cycle_to(55, 179, 0.05, 3);
-      grabbler.cycle_to(48, 0.15, 50);
-      rotation.cycle_to(110, 0.1, 20);
+      rotation.cycle_to(140, 0.05, true, 100);
+      grabbler.cycle_to(35, 0.08);
+      arm.cycle_to(80, 150, 0.05, 2);
+      digitalWrite(LED_BUILTIN, HIGH);
     }
   }
   
@@ -224,15 +235,12 @@ void loop()
   grabbler.update_position();
   arm.update_position();
 
-  
-  // if (arm_status = -1) {
-    // if (rotation_status != -1) {
-      // rotation.stop_moving();
-   // }
-   // if (grabbler_status != -1) {
-   //   grabbler.stop_moving();
-   // }
-   // }
+  if (master_stopped == true) {
+    rotation.complete_cycle_and_stop();
+    grabbler.complete_cycle_and_stop();
+    // arm.complete_cycle_and_stop();   TODO
+    master_stopped = false;
+  }
   
   delay(1);
 }
