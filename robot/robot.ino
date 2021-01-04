@@ -11,7 +11,7 @@ bool master_stopped = false;
 class Motion {              // basic Motion class
   int   servo_position;     // current servo position
   int   stop_at;            // stop at position
-  int   move_direction;     // (current) move direction (-1: not moving, LOW, HIGH)
+  int   move_direction;     // (current) move direction (STOPPED, LOW, HIGH)
   float location;           // current location (float) 
   float step_delta;         // abs value of position increment per step (controls speed of the movement)
   int   lower_bound;        // stop/change movement direction when servo is at this lower_bound position
@@ -31,7 +31,6 @@ public:
   void stop_moving();
   int  get_position();
   void synchronize();
-  void show_position();
 };
 
 void Motion::synchronize() {
@@ -40,18 +39,12 @@ void Motion::synchronize() {
   servo->write(servo_position);
 }
 
-void Motion::show_position() {
-  Serial.print(servo_position);
-  Serial.print(" location: ");
-  Serial.println(location);
-}
-
 int Motion::get_position() {
   return(servo_position);
 }
 
 void Motion::complete_cycle_and_stop() {
-  if (move_direction != -1) {
+  if (move_direction != STOPPED) {
     cycle_cntr = max_cycles - 1;
   }
 }
@@ -64,7 +57,7 @@ void Motion::init(int pos, Servo *srv, int pin) {
   servo_position = pos;
   lower_bound = 0;
   upper_bound = 179;
-  move_direction = -1;
+  move_direction = STOPPED;
   location = float(pos);
   is_master = true;
   servo = srv;
@@ -90,7 +83,7 @@ void Motion::cycle_to(int bound_at, float velocity, bool as_master = false, int 
   stop_at = servo_position;
   step_delta = velocity;
   cycle_cntr = 0;
-  max_cycles = cycles; // (as_master == true)? cycles : -1;   TODO
+  max_cycles = cycles;
   is_master = as_master;
 }
 
@@ -98,7 +91,7 @@ int Motion::update_position() {
   int current_position = servo_position;
   int ret_value = STOPPED;
   
-  if (move_direction > -1) {
+  if (move_direction != STOPPED) {
     ret_value = MOVING;
     if (move_direction == LOW) {
       location -= step_delta;
@@ -122,9 +115,9 @@ int Motion::update_position() {
       if (servo_position == stop_at) {
         cycle_cntr += 1;
         if (cycle_cntr == max_cycles) {
-          move_direction = -1;
+          move_direction = STOPPED;
           ret_value = STOPPED;
-          if (is_master == true) {
+          if (is_master) {
             master_stopped = true;
             digitalWrite(LED_BUILTIN, LOW);
           }
@@ -156,31 +149,26 @@ void Arm_Motion::init(int pos_left, Servo *srv_left, int pin_left, int pos_right
 void Arm_Motion::update_position() {
   int master_status;
   int slave_status;
+  bool sync = false;
+  
   master_status = l_servo.update_position();
   slave_status = r_servo.update_position();
   if (master_status == STOPPED and slave_status != STOPPED) {
-    r_servo.stop_moving();    // TODO
+    r_servo.stop_moving();
+    sync = true;    
   }
-  if (master_status == BOUNCED) {
+  if (master_status == BOUNCED or sync) {
     l_servo.synchronize();
     r_servo.synchronize();
-    
-    Serial.println(" ");
-    Serial.print("master position: ");
-    l_servo.show_position();
-    Serial.print("slave_position: ");
-    r_servo.show_position();
   }
-  // return(master_status);
+  // return(master_status);  TODO
 }
 
 void Arm_Motion::cycle_to(int end_pos_left, int end_pos_right, float velocity, int cycles) {
-
+  // TODO - decide on-fly on master and slave servos
   int master_delta = (end_pos_left > l_servo.get_position())? end_pos_left - l_servo.get_position() : l_servo.get_position() - end_pos_left;
   int slave_delta = (end_pos_right > r_servo.get_position())? end_pos_right - r_servo.get_position() : r_servo.get_position() - end_pos_right;
   float slave_velocity = velocity * (float)slave_delta / (float)master_delta;
-  Serial.print("master velocity: "); Serial.println(velocity);
-  Serial.print("slave velocity:  "); Serial.println(slave_velocity);
   
   l_servo.cycle_to(end_pos_left, velocity, true, cycles);
   r_servo.cycle_to(end_pos_right, slave_velocity);
@@ -205,28 +193,24 @@ void setup()
   pinMode(7, INPUT_PULLUP);
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
-  rotation.init(93, &servo_rotation, 9);
+  rotation.init(50, &servo_rotation, 9);
   grabbler.init(68, &servo_grabbler, 6);
   arm.init(155, &servo_left, 10, 95, &servo_right, 11);
-  Serial.begin(9600);
 } 
 
  
 void loop() 
 { 
-  // int rotation_status;
-  // int grabbler_status;
-  // int arm_status;
 
   if (digitalRead(7) == LOW) {
     switch_pressed = true;
   }
   else {
-    if (switch_pressed == true) {
+    if (switch_pressed) {
       switch_pressed = false;
       rotation.cycle_to(140, 0.05, true, 100);
       grabbler.cycle_to(35, 0.08);
-      arm.cycle_to(80, 150, 0.05, 2);
+      arm.cycle_to(80, 150, 0.03, 5);
       digitalWrite(LED_BUILTIN, HIGH);
     }
   }
@@ -235,7 +219,7 @@ void loop()
   grabbler.update_position();
   arm.update_position();
 
-  if (master_stopped == true) {
+  if (master_stopped) {
     rotation.complete_cycle_and_stop();
     grabbler.complete_cycle_and_stop();
     // arm.complete_cycle_and_stop();   TODO
