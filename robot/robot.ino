@@ -24,6 +24,8 @@ class Motion {              // basic Motion class
   int   max_cycles;         // 1: single move, 0: unlimited periodic movemnt, > 1: limited number of cycles
   Servo *servo;             // servo pointer  
 
+  void elementary_move(int bounce_pos, int stop_pos, float velocity);
+
 public:
   void init(int pos, Servo *srv, int servo_pin);
   void move_to(int stop_at, float velocity);
@@ -69,24 +71,27 @@ void Motion::init(int pos, Servo *srv, int pin) {
   servo->write(servo_position);
 }
 
-// move from the current position to the destination one (and stop there)
-void Motion::move_to(int stop_pos, float velocity) {
-  int dir = (stop_pos > servo_position)? HIGH : LOW;
-  move_direction = dir;
+// elementary move from the current position to stop_pos with/without bouncing at bounce_pos
+void Motion::elementary_move(int bounce_pos, int stop_pos, float velocity) {
+  location = (float)servo_position;
+  move_direction = (bounce_pos > servo_position)? HIGH : LOW;
+  lower_bound = (move_direction == HIGH)? servo_position : bounce_pos;
+  upper_bound = (move_direction == HIGH)? bounce_pos : servo_position;
   stop_at = stop_pos;
   step_delta = velocity;
+}
+
+
+// move from the current position to the destination one (and stop there)
+void Motion::move_to(int stop_pos, float velocity) {
+  elementary_move(stop_pos, stop_pos, velocity);
   cycle_cntr = 0;
   max_cycles = 1;
 }
 
 // perform cyclic movement from the current position to 'bound-at' posint and back; repeat it 'cycles' times
 void Motion::cycle_to(int bound_at, float velocity, int cycles = 0) {
-  location = (float)servo_position;
-  move_direction = (bound_at > servo_position)? HIGH : LOW;
-  lower_bound = (move_direction == HIGH)? servo_position: bound_at;
-  upper_bound = (move_direction == HIGH)? bound_at: servo_position;
-  stop_at = servo_position;
-  step_delta = velocity;
+  elementary_move(bound_at, servo_position, velocity);
   cycle_cntr = 0;
   max_cycles = cycles;
 }
@@ -136,7 +141,7 @@ class Arm_Motion {
   int master;
 public:
   void init(int pos_left, Servo *srv_left, int pin_left, int pos_right, Servo *srv_right, int pin_right);
-  void move_to(int dir, int stop_at);
+  void move_to(int end_pos_left, int end_pos_right, float velocity);
   void cycle_to(int end_pos_left, int end_pos_right, float velocity, int cycles);
   int  update_position();
   void complete_cycle_and_stop();
@@ -184,6 +189,7 @@ int Arm_Motion::update_position() {
   return(master_status);
 }
 
+// move from the current position to the destination one (and stop there)
 void Arm_Motion::cycle_to(int end_pos_left, int end_pos_right, float velocity, int cycles) {
   int delta_left = (end_pos_left > l_servo.get_position())? end_pos_left - l_servo.get_position() : l_servo.get_position() - end_pos_left;
   int delta_right = (end_pos_right > r_servo.get_position())? end_pos_right - r_servo.get_position() : r_servo.get_position() - end_pos_right;
@@ -197,6 +203,22 @@ void Arm_Motion::cycle_to(int end_pos_left, int end_pos_right, float velocity, i
     master = RIGHT;
     l_servo.cycle_to(end_pos_left, velocity * (float)delta_left/(float)delta_right);
     r_servo.cycle_to(end_pos_right, velocity, cycles);
+  }
+}
+
+void Arm_Motion::move_to(int end_pos_left, int end_pos_right, float velocity) {
+  int delta_left = (end_pos_left > l_servo.get_position())? end_pos_left - l_servo.get_position() : l_servo.get_position() - end_pos_left;
+  int delta_right = (end_pos_right > r_servo.get_position())? end_pos_right - r_servo.get_position() : r_servo.get_position() - end_pos_right;
+
+  if (delta_left >= delta_right) {
+    master = LEFT;
+    l_servo.move_to(end_pos_left, velocity);
+    r_servo.move_to(end_pos_right, velocity * (float)delta_right/(float)delta_left);
+  }
+  else {
+    master = RIGHT;
+    l_servo.move_to(end_pos_left, velocity * (float)delta_left/(float)delta_right);
+    r_servo.move_to(end_pos_right, velocity);
   }
 }
 
@@ -270,8 +292,25 @@ void next_step(int start_from=1) {
   switch(current_step) {
     case 1:
       digitalWrite(LED_BUILTIN, HIGH);
-      // arm.cycle_to(55, 179, 0.05, 1);
-      arm.cycle_to(65, 110, 0.05, 1);
+      arm.move_to(90, 97, 0.05);
+      break;
+    case 2:
+      arm.move_to(160, 97, 0.05);
+      break;
+    case 3:
+      arm.cycle_to(90, 97, 0.05, 1);
+      break;
+    case 4:
+      rotation.move_to(20, 0.05);
+      break;
+    case 5:
+      rotation.move_to(160, 0.05);
+      break;
+    case 6:
+      rotation.move_to(95, 0.05);
+      break;
+    case 7:
+      rotation.cycle_to(20, 0.05, 1);
       break;
     default:
       digitalWrite(LED_BUILTIN, LOW);
