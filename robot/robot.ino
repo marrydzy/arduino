@@ -1,5 +1,7 @@
 #include <Servo.h> //Biblioteka odpowiedzialna za serwa
 
+void next_step(int start_from=1);
+
 #define IDLE_STATE -1
 #define MOVING      0
 #define BOUNCED     1
@@ -208,11 +210,12 @@ void loop()
   }
   else {
     if (switch_pressed) {
+      next_step(0);
       switch_pressed = false;
-      rotation.cycle_to(170, 0.05, 2);
-      grabbler.cycle_to(55, 0.1);
-      arm.cycle_to(80, 150, 0.03, 5);
-      digitalWrite(LED_BUILTIN, HIGH);
+      // rotation.cycle_to(170, 0.05, 2);
+      // grabbler.cycle_to(55, 0.1);
+      // arm.cycle_to(80, 150, 0.03, 5);
+      // digitalWrite(LED_BUILTIN, HIGH);
     }
   }
 
@@ -230,9 +233,40 @@ void loop()
   }
 
   if (waiting_to_stop and rotation_status == IDLE_STATE and grabbler_status == IDLE_STATE and arm_status == IDLE_STATE) {
-    digitalWrite(LED_BUILTIN, HIGH);
+    next_step();
     waiting_to_stop = false;
   }
   
   delay(1);
+}
+
+
+void next_step(int start_from=1) {
+  static int current_step = 0;
+
+  if (start_from == 0) {
+    current_step = 0;
+  }
+
+  current_step += 1;
+  switch(current_step) {
+    case 1:
+      digitalWrite(LED_BUILTIN, HIGH);
+      grabbler.cycle_to(55, 0.1, 5);
+      break;
+    case 2:
+      rotation.move_to(10, 0.05);
+      grabbler.cycle_to(55, 0.1);
+      break;
+    case 3:
+      rotation.cycle_to(170, 0.05, 2);
+      grabbler.cycle_to(55, 0.1);
+      break;
+    case 4:
+      rotation.move_to(95, 0.05);
+      break;
+    default:
+      digitalWrite(LED_BUILTIN, LOW);
+      break;
+  }
 }
