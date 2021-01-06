@@ -7,6 +7,9 @@ void next_step(int start_from=1);
 #define BOUNCED     1
 #define STOPPED     2
 
+#define LEFT        0
+#define RIGHT       1
+
 
 class Motion {              // basic Motion class
   int   servo_position;     // current servo position
@@ -119,7 +122,6 @@ int Motion::update_position() {
         if (cycle_cntr == max_cycles) {
           move_direction = IDLE_STATE;
           ret_value = STOPPED;
-          digitalWrite(LED_BUILTIN, LOW);
         }
       }
     }
@@ -131,6 +133,7 @@ int Motion::update_position() {
 class Arm_Motion {
   Motion l_servo;       // left servo Motion object
   Motion r_servo;       // right servo Motion object
+  int master;
 public:
   void init(int pos_left, Servo *srv_left, int pin_left, int pos_right, Servo *srv_right, int pin_right);
   void move_to(int dir, int stop_at);
@@ -146,36 +149,55 @@ void Arm_Motion::init(int pos_left, Servo *srv_left, int pin_left, int pos_right
 }
 
 void Arm_Motion::complete_cycle_and_stop() {
-  // TODO - resolve the mater/slave issue
-  l_servo.complete_cycle_and_stop();
+  if (master == LEFT) {
+    l_servo.complete_cycle_and_stop();
+  }
+  else {
+    r_servo.complete_cycle_and_stop();
+  }
 }
 
 // elemeentary step of arm movement
 int Arm_Motion::update_position() {
-  // TODO - resolve master/slave issue   
+  Motion *ptr_master;
+  Motion *ptr_slave;
   int master_status;
-  int slave_status;
   
-  master_status = l_servo.update_position();
-  slave_status = r_servo.update_position();
-  if (master_status == STOPPED) {
-    r_servo.stop_moving(); 
+  if (master == LEFT) {
+    ptr_master = &l_servo;
+    ptr_slave  = &r_servo;
   }
+  else {
+    ptr_master = &r_servo;
+    ptr_slave  = &l_servo;
+  }
+  
+  master_status = ptr_master->update_position();
+  ptr_slave->update_position();
   if (master_status == BOUNCED or master_status == STOPPED) {
-    l_servo.synchronize();
-    r_servo.synchronize();
+    ptr_master->synchronize();
+    ptr_slave->synchronize();
+    if (master_status == STOPPED) {
+      ptr_slave->stop_moving(); 
+    }
   }
   return(master_status);
 }
 
 void Arm_Motion::cycle_to(int end_pos_left, int end_pos_right, float velocity, int cycles) {
-  // TODO - decide on-fly on master and slave servos
-  int master_delta = (end_pos_left > l_servo.get_position())? end_pos_left - l_servo.get_position() : l_servo.get_position() - end_pos_left;
-  int slave_delta = (end_pos_right > r_servo.get_position())? end_pos_right - r_servo.get_position() : r_servo.get_position() - end_pos_right;
-  float slave_velocity = velocity * (float)slave_delta / (float)master_delta;
-  
-  l_servo.cycle_to(end_pos_left, velocity, cycles);
-  r_servo.cycle_to(end_pos_right, slave_velocity);
+  int delta_left = (end_pos_left > l_servo.get_position())? end_pos_left - l_servo.get_position() : l_servo.get_position() - end_pos_left;
+  int delta_right = (end_pos_right > r_servo.get_position())? end_pos_right - r_servo.get_position() : r_servo.get_position() - end_pos_right;
+
+  if (delta_left >= delta_right) {
+    master = LEFT;
+    l_servo.cycle_to(end_pos_left, velocity, cycles);
+    r_servo.cycle_to(end_pos_right, velocity * (float)delta_right/(float)delta_left);
+  }
+  else {
+    master = RIGHT;
+    l_servo.cycle_to(end_pos_left, velocity * (float)delta_left/(float)delta_right);
+    r_servo.cycle_to(end_pos_right, velocity, cycles);
+  }
 }
 
 
@@ -198,7 +220,8 @@ void setup()
   digitalWrite(LED_BUILTIN, LOW);
   rotation.init(95, &servo_rotation, 9);
   grabbler.init(68, &servo_grabbler, 6);
-  arm.init(155, &servo_left, 10, 95, &servo_right, 11);
+  arm.init(160, &servo_left, 10, 97, &servo_right, 11);
+  Serial.begin(9600);
 } 
 
  
@@ -212,18 +235,13 @@ void loop()
     if (switch_pressed) {
       next_step(0);
       switch_pressed = false;
-      // rotation.cycle_to(170, 0.05, 2);
-      // grabbler.cycle_to(55, 0.1);
-      // arm.cycle_to(80, 150, 0.03, 5);
-      // digitalWrite(LED_BUILTIN, HIGH);
     }
   }
 
   static bool waiting_to_stop = false;
-  int  rotation_status = rotation.update_position();
-  int  grabbler_status = grabbler.update_position();
-  int  arm_status = arm.update_position();
-
+  int rotation_status = rotation.update_position();
+  int grabbler_status = grabbler.update_position();
+  int arm_status = arm.update_position();
 
   if (rotation_status == STOPPED or grabbler_status == STOPPED or arm_status == STOPPED) {
     rotation.complete_cycle_and_stop();
@@ -252,18 +270,8 @@ void next_step(int start_from=1) {
   switch(current_step) {
     case 1:
       digitalWrite(LED_BUILTIN, HIGH);
-      grabbler.cycle_to(55, 0.1, 5);
-      break;
-    case 2:
-      rotation.move_to(10, 0.05);
-      grabbler.cycle_to(55, 0.1);
-      break;
-    case 3:
-      rotation.cycle_to(170, 0.05, 2);
-      grabbler.cycle_to(55, 0.1);
-      break;
-    case 4:
-      rotation.move_to(95, 0.05);
+      // arm.cycle_to(55, 179, 0.05, 1);
+      arm.cycle_to(65, 110, 0.05, 1);
       break;
     default:
       digitalWrite(LED_BUILTIN, LOW);
