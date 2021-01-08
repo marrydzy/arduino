@@ -1,6 +1,8 @@
 #include <Servo.h> //Biblioteka odpowiedzialna za serwa
 
-void next_step(int start_from=1);
+void next_step(int, int);
+int  prog_A(int);
+int  prog_B(int);
 
 #define IDLE_STATE -1
 #define MOVING      0
@@ -241,22 +243,22 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
   rotation.init(95, &servo_rotation, 9);
-  grabbler.init(85, &servo_grabbler, 6);
+  grabbler.init(65, &servo_grabbler, 6);
   arm.init(160, &servo_left, 10, 97, &servo_right, 11);
   Serial.begin(9600);
 } 
 
  
-void loop() 
-{ 
-
+void loop() { 
+  int program_nbr;
   if (digitalRead(7) == LOW) {
     switch_pressed = true;
   }
   else {
     if (switch_pressed) {
-      next_step(0);
       switch_pressed = false;
+      program_nbr = 2;            // TODO: here select program to executed
+      next_step(program_nbr, 0);
     }
   }
 
@@ -273,7 +275,7 @@ void loop()
   }
 
   if (waiting_to_stop and rotation_status == IDLE_STATE and grabbler_status == IDLE_STATE and arm_status == IDLE_STATE) {
-    next_step();
+    next_step(program_nbr, 1);
     waiting_to_stop = false;
   }
   
@@ -281,17 +283,23 @@ void loop()
 }
 
 
-void next_step(int start_from=1) {
+void next_step(int program, int start_from=1) {
   static int current_step = 0;
 
-  int grabbler_amp = 65;
-  int grabbler_speed = 0.2;
-
   if (start_from == 0) {
-    current_step = 0;
+    current_step = 1;
   }
 
-  current_step += 1;
+  // current_step += 1;
+  if (program == 1) {
+    current_step = prog_A(current_step);
+  }
+  else {
+    current_step = prog_B(current_step);
+  }
+}
+
+int prog_A(int current_step) {
   switch(current_step) {
     case 1:
       digitalWrite(LED_BUILTIN, HIGH);
@@ -316,34 +324,68 @@ void next_step(int start_from=1) {
       arm.move_to(179, 55, 0.05);
       break;
     case 8:
-      arm.move_to(120, 55, 0.05);
-      grabbler.cycle_to(grabbler_amp, 0.2);
-      break;
-    case 9:
-      arm.move_to(55, 120, 0.05);
-      grabbler.cycle_to(grabbler_amp, 0.2);
-      break;
-    case 10:
-      arm.move_to(55, 179, 0.05);
-      grabbler.cycle_to(grabbler_amp, 0.2);
-      break;
-    case 11:
-      arm.move_to(150, 179, 0.05);
-      grabbler.cycle_to(grabbler_amp, 0.2);
-      break;
-    case 12:
-      arm.move_to(179, 150, 0.05);
-      grabbler.cycle_to(grabbler_amp, 0.2);
-      break;
-    case 13:
-      arm.move_to(179, 55, 0.05);
-      grabbler.cycle_to(grabbler_amp, 0.2);
-      break;
-    case 14:
       arm.move_to(160, 97, 0.05);
       break;
     default:
       digitalWrite(LED_BUILTIN, LOW);
       break;
+  } 
+  return(current_step); 
+}
+
+int prog_B(int current_step) {
+  static int inner_counter = 1;
+  int ret_value = current_step + 1;
+  int grabbler_amp = 85;
+  int grabbler_speed = 0.2;
+
+  switch(current_step) {
+    case 1:
+      // digitalWrite(LED_BUILTIN, HIGH);
+      arm.move_to(140, 97, 0.05);
+      break;
+    case 2:
+      arm.move_to(55, 179, 0.05);
+      break;
+    case 3:
+      digitalWrite(LED_BUILTIN, HIGH);
+      arm.move_to(150, 179, 0.05);
+      grabbler.cycle_to(grabbler_amp, 0.2);
+      break;
+    case 4:
+      arm.move_to(179, 150, 0.05);
+      grabbler.cycle_to(grabbler_amp, 0.2);
+      break;
+    case 5:
+      arm.move_to(179, 97, 0.05);
+      grabbler.cycle_to(grabbler_amp, 0.2);
+      break;
+    case 6:
+      arm.move_to(179, 150, 0.05);
+      grabbler.cycle_to(grabbler_amp, 0.2);
+      break;
+    case 7:
+      arm.move_to(150, 179, 0.05);
+      grabbler.cycle_to(grabbler_amp, 0.2);
+      break;    
+    case 8:
+      arm.move_to(55, 179, 0.05);
+      grabbler.cycle_to(grabbler_amp, 0.2);
+      // inner_counter++;
+      if (inner_counter++ == 3) {
+        inner_counter = 1;
+      }
+      else {
+        ret_value = 3;
+      }
+      break;
+    case 9:
+      arm.move_to(160, 97, 0.05);
+      digitalWrite(LED_BUILTIN, LOW);
+      break;
+    default:
+      // digitalWrite(LED_BUILTIN, LOW);
+      break;
   }
+  return(ret_value);
 }
