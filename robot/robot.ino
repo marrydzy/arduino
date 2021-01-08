@@ -27,9 +27,9 @@ class Motion {              // basic Motion class
   void elementary_move(int bounce_pos, int stop_pos, float velocity);
 
 public:
-  void init(int pos, Servo *srv, int servo_pin);
-  void move_to(int stop_at, float velocity);
-  void cycle_to(int bound_at, float velocity, int cycles);
+  void init(int, Servo*, int);
+  void move_to(int, float);
+  void cycle_to(int, float, int);
   int  update_position();
   void complete_cycle_and_stop();
   void stop_moving();
@@ -140,9 +140,9 @@ class Arm_Motion {
   Motion r_servo;       // right servo Motion object
   int master;
 public:
-  void init(int pos_left, Servo *srv_left, int pin_left, int pos_right, Servo *srv_right, int pin_right);
-  void move_to(int end_pos_left, int end_pos_right, float velocity);
-  void cycle_to(int end_pos_left, int end_pos_right, float velocity, int cycles);
+  void init(int, Servo*, int, int, Servo*, int);
+  void move_to(int, int, float);
+  void cycle_to(int, int, float, int);
   int  update_position();
   void complete_cycle_and_stop();
 };
@@ -241,7 +241,7 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
   rotation.init(95, &servo_rotation, 9);
-  grabbler.init(68, &servo_grabbler, 6);
+  grabbler.init(85, &servo_grabbler, 6);
   arm.init(160, &servo_left, 10, 97, &servo_right, 11);
   Serial.begin(9600);
 } 
@@ -284,6 +284,9 @@ void loop()
 void next_step(int start_from=1) {
   static int current_step = 0;
 
+  int grabbler_amp = 65;
+  int grabbler_speed = 0.2;
+
   if (start_from == 0) {
     current_step = 0;
   }
@@ -292,25 +295,52 @@ void next_step(int start_from=1) {
   switch(current_step) {
     case 1:
       digitalWrite(LED_BUILTIN, HIGH);
-      arm.move_to(90, 97, 0.05);
+      arm.cycle_to(179, 55, 0.05, 1);
       break;
     case 2:
-      arm.move_to(160, 97, 0.05);
+      arm.cycle_to(179, 150, 0.05, 1);
       break;
     case 3:
-      arm.cycle_to(90, 97, 0.05, 1);
+      arm.cycle_to(150, 179, 0.05, 1);
       break;
     case 4:
-      rotation.move_to(20, 0.05);
+      arm.cycle_to(55, 179, 0.05, 1);
       break;
     case 5:
-      rotation.move_to(160, 0.05);
+      arm.cycle_to(55, 120, 0.05, 1);
       break;
     case 6:
-      rotation.move_to(95, 0.05);
+      arm.cycle_to(120, 55, 0.05, 1);
       break;
     case 7:
-      rotation.cycle_to(20, 0.05, 1);
+      arm.move_to(179, 55, 0.05);
+      break;
+    case 8:
+      arm.move_to(120, 55, 0.05);
+      grabbler.cycle_to(grabbler_amp, 0.2);
+      break;
+    case 9:
+      arm.move_to(55, 120, 0.05);
+      grabbler.cycle_to(grabbler_amp, 0.2);
+      break;
+    case 10:
+      arm.move_to(55, 179, 0.05);
+      grabbler.cycle_to(grabbler_amp, 0.2);
+      break;
+    case 11:
+      arm.move_to(150, 179, 0.05);
+      grabbler.cycle_to(grabbler_amp, 0.2);
+      break;
+    case 12:
+      arm.move_to(179, 150, 0.05);
+      grabbler.cycle_to(grabbler_amp, 0.2);
+      break;
+    case 13:
+      arm.move_to(179, 55, 0.05);
+      grabbler.cycle_to(grabbler_amp, 0.2);
+      break;
+    case 14:
+      arm.move_to(160, 97, 0.05);
       break;
     default:
       digitalWrite(LED_BUILTIN, LOW);
