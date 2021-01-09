@@ -12,6 +12,10 @@ int  prog_B(int);
 #define LEFT        0
 #define RIGHT       1
 
+#define LED_BLUE    2
+#define LED_GREEN   4
+#define LED_RED     3
+
 
 class Motion {              // basic Motion class
   int   servo_position;     // current servo position
@@ -242,6 +246,14 @@ void setup()
   pinMode(7, INPUT_PULLUP);
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
+  
+  pinMode(LED_RED, OUTPUT);
+  pinMode(LED_GREEN, OUTPUT);
+  pinMode(LED_BLUE, OUTPUT);
+  digitalWrite(LED_RED, HIGH);
+  digitalWrite(LED_GREEN, HIGH);
+  digitalWrite(LED_BLUE, HIGH);
+  
   rotation.init(95, &servo_rotation, 9);
   grabbler.init(65, &servo_grabbler, 6);
   arm.init(160, &servo_left, 10, 97, &servo_right, 11);
@@ -290,7 +302,10 @@ void next_step(int program, int start_from=1) {
     current_step = 1;
   }
 
-  // current_step += 1;
+  digitalWrite(LED_RED, HIGH);
+  digitalWrite(LED_GREEN, HIGH);
+  digitalWrite(LED_BLUE, HIGH);
+
   if (program == 1) {
     current_step = prog_A(current_step);
   }
@@ -341,37 +356,25 @@ int prog_B(int current_step) {
 
   switch(current_step) {
     case 1:
-      // digitalWrite(LED_BUILTIN, HIGH);
+      digitalWrite(LED_BUILTIN, HIGH);
+      digitalWrite(LED_GREEN, LOW);
       arm.move_to(140, 97, 0.05);
       break;
     case 2:
+      digitalWrite(LED_GREEN, LOW);
       arm.move_to(55, 179, 0.05);
       break;
     case 3:
-      digitalWrite(LED_BUILTIN, HIGH);
-      arm.move_to(150, 179, 0.05);
-      grabbler.cycle_to(grabbler_amp, 0.2);
+      digitalWrite(LED_BLUE, LOW);
+      rotation.move_to(70, 0.05);
       break;
     case 4:
-      arm.move_to(179, 150, 0.05);
-      grabbler.cycle_to(grabbler_amp, 0.2);
+      digitalWrite(LED_BLUE, LOW);
+      rotation.move_to(120, 0.05);
       break;
     case 5:
-      arm.move_to(179, 97, 0.05);
-      grabbler.cycle_to(grabbler_amp, 0.2);
-      break;
-    case 6:
-      arm.move_to(179, 150, 0.05);
-      grabbler.cycle_to(grabbler_amp, 0.2);
-      break;
-    case 7:
-      arm.move_to(150, 179, 0.05);
-      grabbler.cycle_to(grabbler_amp, 0.2);
-      break;    
-    case 8:
-      arm.move_to(55, 179, 0.05);
-      grabbler.cycle_to(grabbler_amp, 0.2);
-      // inner_counter++;
+      digitalWrite(LED_BLUE, LOW);
+      rotation.move_to(95, 0.05);
       if (inner_counter++ == 3) {
         inner_counter = 1;
       }
@@ -379,12 +382,48 @@ int prog_B(int current_step) {
         ret_value = 3;
       }
       break;
+    case 6:
+      digitalWrite(LED_RED, LOW);
+      arm.move_to(150, 179, 0.05);
+      grabbler.cycle_to(grabbler_amp, 0.2);
+      break;
+    case 7:
+      digitalWrite(LED_RED, LOW);
+      arm.move_to(179, 150, 0.05);
+      grabbler.cycle_to(grabbler_amp, 0.2);
+      break;
+    case 8:
+      digitalWrite(LED_RED, LOW);
+      arm.move_to(179, 97, 0.05);
+      grabbler.cycle_to(grabbler_amp, 0.2);
+      break;
     case 9:
+      digitalWrite(LED_RED, LOW);
+      arm.move_to(179, 150, 0.05);
+      grabbler.cycle_to(grabbler_amp, 0.2);
+      break;
+    case 10:
+      digitalWrite(LED_RED, LOW);
+      arm.move_to(150, 179, 0.05);
+      grabbler.cycle_to(grabbler_amp, 0.2);
+      break;    
+    case 11:
+      digitalWrite(LED_RED, LOW);
+      arm.move_to(55, 179, 0.05);
+      grabbler.cycle_to(grabbler_amp, 0.2);
+      if (inner_counter++ == 3) {
+        inner_counter = 1;
+      }
+      else {
+        ret_value = 6;
+      }
+      break;
+    case 12:
+      digitalWrite(LED_GREEN, LOW);
       arm.move_to(160, 97, 0.05);
-      digitalWrite(LED_BUILTIN, LOW);
       break;
     default:
-      // digitalWrite(LED_BUILTIN, LOW);
+      digitalWrite(LED_BUILTIN, LOW);
       break;
   }
   return(ret_value);
