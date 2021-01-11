@@ -25,14 +25,28 @@
 
 #define NONE       -1
 
+void next_step();
+void reset_leds();
+
 class Program {
   int row = 0;
   int step_nbr = 0;
   int l1_cntr = 0;
   int l2_cntr = 0;
+  int script[][7];
 public:
   void init();
   int* get_action();
+};
+
+struct Action {
+  int step_nbr;
+  int device;
+  int action_type;
+  int pos_1;
+  int pos_2;
+  int delta;
+  int cycles;
 };
 
 

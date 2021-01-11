@@ -9,11 +9,18 @@
 
 
 int scenario[][7] = {
-  {1, ROTATION, MOVE_TO,   65, NONE, 100, 0},
-  {2, ROTATION, CYCLE_TO, 125, -1, 100,  1},
-  {2, GRABBLER, CYCLE_TO,  85, -1, 150,  0},
-  {3, ROTATION, MOVE_TO,   93, -1, 100, -1},
-  {4, PROGRAM,  STOP,     NAN, -1,   0, -1},
+  {0,  ROTATION, MOVE_TO,   45, NONE,  100, NONE},
+  {1,  ROTATION, MOVE_TO,  145, NONE,  100, NONE},
+  {2,  ROTATION, MOVE_TO,   93, NONE,  100, NONE},
+  {2,  GRABBLER, MOVE_TO,   85, NONE,  100, NONE},
+  {3,  GRABBLER, MOVE_TO,   65, NONE,  100, NONE},
+  {4,  ARM,      CYCLE_TO, 179,   55,   50,    2},
+  {5,  ARM,      CYCLE_TO, 179,  150,   50,    2},
+  {6,  ARM,      CYCLE_TO, 150,  179,   50,    2},
+  {7,  ARM,      CYCLE_TO,  55,  179,   50,    2},
+  {8,  ARM,      CYCLE_TO,  55,  120,   50,    2},
+  {9,  ARM,      CYCLE_TO, 120,   55,   50,    2},
+  {10, PROGRAM,  STOP,    NONE, NONE, NONE, NONE},
 };
 
 
@@ -21,7 +28,8 @@ void Program::init() {
   row = 0;
   step_nbr = 0;
   l1_cntr = 0;
-  l2_cntr = 0;;
+  l2_cntr = 0;
+
 };
 
 
@@ -29,7 +37,7 @@ int* Program::get_action() {
   if (scenario[row][0] == step_nbr) {
     if (scenario[row][1] == PROGRAM) {
       if (scenario[row][2] == STOP) {
-        init();
+        reset_leds();
         return(NULL);
       }
     }

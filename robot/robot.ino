@@ -2,10 +2,6 @@
 
 #include </home/marek/Projects/arduino/robot/program.h>
 
-void next_step(int, int);
-int  prog_A(int);
-int  prog_B(int);
-
 
 class Motion {              // basic Motion class
   int   servo_position;     // current servo position
@@ -248,20 +244,19 @@ void setup()
   rotation.init(93, &servo_rotation, 9);
   grabbler.init(65, &servo_grabbler, 6);
   arm.init(160, &servo_left, 10, 97, &servo_right, 11);
-  Serial.begin(9600);
+  // Serial.begin(9600);
 } 
 
  
 void loop() { 
-  int program_nbr;
   if (digitalRead(7) == LOW) {
     switch_pressed = true;
   }
   else {
     if (switch_pressed) {
       switch_pressed = false;
-      program_nbr = 2;            // TODO: here select program to executed
-      next_step(program_nbr, 0);
+      program.init();
+      next_step();
     }
   }
 
@@ -278,7 +273,7 @@ void loop() {
   }
 
   if (waiting_to_stop and rotation_status == IDLE_STATE and grabbler_status == IDLE_STATE and arm_status == IDLE_STATE) {
-    next_step(program_nbr, 1);
+    next_step();
     waiting_to_stop = false;
   }
   
@@ -286,190 +281,63 @@ void loop() {
 }
 
 
-void next_step(int program, int start_from=1) {
-  static int current_step = 0;
-
-  if (start_from == 0) {
-    current_step = 1;
-  }
-
-  digitalWrite(LED_RED, HIGH);
-  digitalWrite(LED_GREEN, HIGH);
-  digitalWrite(LED_BLUE, HIGH);
-
-  if (program == 1) {
-    current_step = prog_A(current_step);
-  }
-  else {
-    current_step = prog_B(current_step);
-  }
-}
-
-int prog_A(int current_step) {
-  switch(current_step) {
-    case 1:
-      digitalWrite(LED_BUILTIN, HIGH);
-      arm.cycle_to(179, 55, 0.05, 1);
-      break;
-    case 2:
-      arm.cycle_to(179, 150, 0.05, 1);
-      break;
-    case 3:
-      arm.cycle_to(150, 179, 0.05, 1);
-      break;
-    case 4:
-      arm.cycle_to(55, 179, 0.05, 1);
-      break;
-    case 5:
-      arm.cycle_to(55, 120, 0.05, 1);
-      break;
-    case 6:
-      arm.cycle_to(120, 55, 0.05, 1);
-      break;
-    case 7:
-      arm.move_to(179, 55, 0.05);
-      break;
-    case 8:
-      arm.move_to(160, 97, 0.05);
-      break;
-    default:
-      digitalWrite(LED_BUILTIN, LOW);
-      break;
-  } 
-  return(current_step); 
-}
-
-void step_actions() {
+void next_step() {
   int* action = program.get_action();
-  if (action) {
-    while (action) {
-      Serial.print("step:   "); Serial.println(*action++);
-      Serial.print("device: "); Serial.println(*action++);
-      Serial.print("action: "); Serial.println(*action++);
-      Serial.print("pos_1:  "); Serial.println(*action++);
-      Serial.print("pos_2:  "); 
-      int value = *action++;
-      if (value == NONE) {
-        Serial.println("NONE");
-      }
-      else {
-        Serial.println(value);
-      }
-      Serial.print("speed:  "); Serial.println(float(*action++)/1000.0);
-      Serial.print("cycles: "); Serial.println(*action);
-      Serial.println();
-      action = program.get_action();
+  while(action) {
+    int   device = action[1];
+    int   action_type = action[2];
+    int   pos_1 = action[3];
+    int   pos_2 = action[4];
+    float velocity = float(action[5])/1000.0;
+    int   cycles = action[6];
+
+    switch(device) {
+      case ROTATION:
+        if (action_type == MOVE_TO) {
+          rotation.move_to(pos_1, velocity);
+        }
+        else {
+          rotation.cycle_to(pos_1, velocity, cycles);
+        }
+        break;
+      case GRABBLER:
+        if (action_type == MOVE_TO) {
+          grabbler.move_to(pos_1, velocity);
+        }
+        else {
+          grabbler.cycle_to(pos_1, velocity, cycles);
+        }
+        break;
+      case ARM:
+        if (action_type == MOVE_TO) {
+          arm.move_to(pos_1, pos_2, velocity);
+        }
+        else {
+          arm.cycle_to(pos_1, pos_2, velocity, cycles);
+        }
+        break;
+      default:
+        break;
     }
-  }
-  else {
-    Serial.println("Program stopped");
+    
+    reset_leds();
+    switch(action[1]) {
+      case ARM:
+        digitalWrite(LED_RED, LOW);
+        break;
+      case ROTATION:
+        digitalWrite(LED_GREEN, LOW);
+        break;
+      case GRABBLER:
+        digitalWrite(LED_BLUE, LOW);
+        break;
+    }
+    action = program.get_action();
   }
 }
 
-int prog_B(int current_step) {
-  static int inner_counter = 1;
-  int   ret_value = current_step + 1;
-  int   grabbler_amp = 85;
-  int   grabbler_speed = 0.2;
-  float rot_speed = 0.15;
-
-  switch(current_step) {
-    case 1:
-      digitalWrite(LED_BUILTIN, HIGH);
-      digitalWrite(LED_GREEN, LOW);
-      arm.move_to(140, 97, 0.05);
-      step_actions();
-      break;
-    case 2:
-      digitalWrite(LED_GREEN, LOW);
-      arm.move_to(55, 179, 0.05);
-      step_actions();
-      break;
-    case 3:   // loop start
-      digitalWrite(LED_BLUE, LOW);
-      arm.cycle_to(100, 179, 0.05, 2);
-      step_actions();
-      break;
-    case 4:
-      digitalWrite(LED_BLUE, LOW);
-      rotation.move_to(65, rot_speed);
-      step_actions();
-      break;
-    case 5:
-      digitalWrite(LED_BLUE, LOW);
-      arm.cycle_to(100, 179, 0.05, 1);
-      step_actions();
-      break;
-    case 6:
-      digitalWrite(LED_BLUE, LOW);
-      rotation.move_to(93, rot_speed);
-      step_actions();
-      break;
-    case 7:
-      digitalWrite(LED_BLUE, LOW);
-      arm.cycle_to(100, 179, 0.05, 2);
-      break;
-    case 8:
-      digitalWrite(LED_BLUE, LOW);
-      rotation.move_to(125, rot_speed);
-      break;
-    case 9:
-      digitalWrite(LED_BLUE, LOW);
-      arm.cycle_to(100, 179, 0.05, 2);
-      break;
-    case 10:
-      digitalWrite(LED_BLUE, LOW);
-      rotation.move_to(93, rot_speed);
-      if (inner_counter++ == 2) {
-        inner_counter = 1;
-      }
-      else {
-        ret_value = 3;
-      }
-      break;
-    case 11:   // loop 
-      digitalWrite(LED_RED, LOW);
-      arm.move_to(150, 179, 0.05);
-      grabbler.cycle_to(grabbler_amp, 0.2);
-      break;
-    case 12:
-      digitalWrite(LED_RED, LOW);
-      arm.move_to(179, 150, 0.05);
-      grabbler.cycle_to(grabbler_amp, 0.2);
-      break;
-    case 13:
-      digitalWrite(LED_RED, LOW);
-      arm.move_to(179, 97, 0.05);
-      grabbler.cycle_to(grabbler_amp, 0.2);
-      break;
-    case 14:
-      digitalWrite(LED_RED, LOW);
-      arm.move_to(179, 150, 0.05);
-      grabbler.cycle_to(grabbler_amp, 0.2);
-      break;
-    case 15:
-      digitalWrite(LED_RED, LOW);
-      arm.move_to(150, 179, 0.05);
-      grabbler.cycle_to(grabbler_amp, 0.2);
-      break;    
-    case 16:
-      digitalWrite(LED_RED, LOW);
-      arm.move_to(55, 179, 0.05);
-      grabbler.cycle_to(grabbler_amp, 0.2);
-      if (inner_counter++ == 2) {
-        inner_counter = 1;
-      }
-      else {
-        ret_value = 11;
-      }
-      break;
-    case 17:
-      digitalWrite(LED_GREEN, LOW);
-      arm.move_to(160, 97, 0.05);
-      break;
-    default:
-      digitalWrite(LED_BUILTIN, LOW);
-      break;
-  }
-  return(ret_value);
-}
+void reset_leds() {
+    digitalWrite(LED_RED, HIGH);    
+    digitalWrite(LED_GREEN, HIGH);
+    digitalWrite(LED_BLUE, HIGH);  
+};
