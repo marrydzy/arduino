@@ -28,17 +28,6 @@
 void next_step();
 void reset_leds();
 
-class Program {
-  int row = 0;
-  int step_nbr = 0;
-  int l1_cntr = 0;
-  int l2_cntr = 0;
-  int script[][7];
-public:
-  void init();
-  int* get_action();
-};
-
 struct Action {
   int step_nbr;
   int device;
@@ -48,6 +37,18 @@ struct Action {
   int delta;
   int cycles;
 };
+
+class Program {
+  int row = 0;
+  int step_nbr = 0;
+  int l1_cntr = 0;
+  int l2_cntr = 0;
+  Action* scenario;
+public:
+  void init(int);
+  Action* get_action();
+};
+
 
 
 #endif

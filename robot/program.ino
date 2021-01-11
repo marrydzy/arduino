@@ -8,7 +8,11 @@
  */
 
 
-int scenario[][7] = {
+Action script_0[] = {
+  {10, PROGRAM,  STOP,    NONE, NONE, NONE, NONE},
+};
+
+Action script_1[] = {
   {0,  ROTATION, MOVE_TO,   45, NONE,  100, NONE},
   {1,  ROTATION, MOVE_TO,  145, NONE,  100, NONE},
   {2,  ROTATION, MOVE_TO,   93, NONE,  100, NONE},
@@ -23,26 +27,48 @@ int scenario[][7] = {
   {10, PROGRAM,  STOP,    NONE, NONE, NONE, NONE},
 };
 
+Action script_2[] = {
+  {0, ARM, MOVE_TO, 179,  55, 50, NONE},
+  {1, ARM, MOVE_TO, 179, 150, 50, NONE},
+  {2, ARM, MOVE_TO, 150, 179, 50, NONE},
+  {3, ARM, MOVE_TO,  55, 179, 50, NONE},
+  {4, ARM, MOVE_TO,  55, 120, 50, NONE},
+  {5, ARM, MOVE_TO, 120,  55, 50, NONE},
+  {6, ARM, MOVE_TO, 179,  55, 50, NONE},
+  {7, ARM, MOVE_TO, 160,  97, 50, NONE},
+  {8, PROGRAM, STOP, NONE, NONE, NONE, NONE},
+};
 
-void Program::init() {
+
+void Program::init(int prog_nbr) {
   row = 0;
   step_nbr = 0;
   l1_cntr = 0;
   l2_cntr = 0;
-
+  switch(prog_nbr) {
+    case 1:
+      scenario = script_1;
+      break;
+    case 2:
+      scenario = script_2;
+      break;
+    default:
+      scenario = script_0;
+      break;
+  }
 };
 
 
-int* Program::get_action() {
-  if (scenario[row][0] == step_nbr) {
-    if (scenario[row][1] == PROGRAM) {
-      if (scenario[row][2] == STOP) {
+Action* Program::get_action() {
+  if (scenario[row].step_nbr == step_nbr) {
+    if (scenario[row].device == PROGRAM) {
+      if (scenario[row].action_type == STOP) {
         reset_leds();
         return(NULL);
       }
     }
     else {
-      return(scenario[row++]);
+      return(&scenario[row++]);
     }
   }
   else {

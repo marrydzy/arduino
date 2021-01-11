@@ -255,7 +255,7 @@ void loop() {
   else {
     if (switch_pressed) {
       switch_pressed = false;
-      program.init();
+      program.init(2);
       next_step();
     }
   }
@@ -282,14 +282,14 @@ void loop() {
 
 
 void next_step() {
-  int* action = program.get_action();
+  Action* action = program.get_action();
   while(action) {
-    int   device = action[1];
-    int   action_type = action[2];
-    int   pos_1 = action[3];
-    int   pos_2 = action[4];
-    float velocity = float(action[5])/1000.0;
-    int   cycles = action[6];
+    int   device = action->device;
+    int   action_type = action->action_type;
+    int   pos_1 = action->pos_1;
+    int   pos_2 = action->pos_2;
+    float velocity = float(action->delta)/1000.0;
+    int   cycles = action->cycles;
 
     switch(device) {
       case ROTATION:
@@ -321,7 +321,7 @@ void next_step() {
     }
     
     reset_leds();
-    switch(action[1]) {
+    switch(action->device) {
       case ARM:
         digitalWrite(LED_RED, LOW);
         break;
