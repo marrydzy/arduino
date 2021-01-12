@@ -28,18 +28,24 @@ Action script_1[] = {
 };
 
 Action script_2[] = {
-  {0,  ARM, MOVE_TO, 179,  55, 50, NONE},
-  {1,  ARM, MOVE_TO, 179, 150, 50, NONE},
-  {2,  ARM, MOVE_TO, 150, 179, 50, NONE},
-  {3,  ARM, MOVE_TO,  55, 179, 50, NONE},
-  {4,  ARM, MOVE_TO,  55, 120, 50, NONE},
-  {5,  ARM, MOVE_TO, 120,  55, 50, NONE},
-  {6,  ARM, MOVE_TO, 179,  55, 50, NONE},
-  {7,  ARM, MOVE_TO, 160,  97, 50, NONE},
-  {8,  ARM, MOVE_TO, 160, 170, 50, NONE},
-  {9,  ARM, MOVE_TO, 160,  55, 50, NONE},
-  {10, ARM, MOVE_TO, 160,  97, 50, NONE},
-  {11, PROGRAM, STOP, NONE, NONE, NONE, NONE},
+  {0,  ARM,       MOVE_TO,    179,   55,   50, NONE},
+  {0,  LED_RED,   LED_BLINK,  500,  500, NONE,    0},
+  {1,  ARM,       MOVE_TO,    179,  150,   50, NONE},
+  {2,  ARM,       MOVE_TO,    150,  179,   50, NONE},
+  {3,  ARM,       MOVE_TO,     55,  179,   50, NONE},
+  {3,  LED_RED,   LED_OFF,   NONE, NONE, NONE, NONE},
+  {3,  LED_BLUE,  LED_BLINK,  300,  300, NONE,    0},
+  {4,  ARM,       MOVE_TO,     55,  120,   50, NONE},
+  {5,  ARM,       MOVE_TO,    120,   55,   50, NONE},
+  {6,  ARM,       MOVE_TO,    179,   55,   50, NONE},
+  {7,  ARM,       MOVE_TO,    160,   97,   50, NONE},
+  {7,  LED_BLUE,  LED_OFF,   NONE, NONE, NONE, NONE},
+  {7,  LED_GREEN, LED_BLINK,  300,  300, NONE,    0},
+  {8,  ARM,       MOVE_TO,    160,  170,   50, NONE},
+  {9,  ARM,       MOVE_TO,    160,   55,   50, NONE},
+  {10, ARM,       MOVE_TO,    160,   97,   50, NONE},
+  {11, LED_GREEN, LED_OFF,   NONE, NONE, NONE, NONE}, 
+  {11, PROGRAM,   STOP,      NONE, NONE, NONE, NONE},
 };
 
 
@@ -66,7 +72,7 @@ Action* Program::get_action() {
   if (scenario[row].step_nbr == step_nbr) {
     if (scenario[row].device == PROGRAM) {
       if (scenario[row].action_type == STOP) {
-        reset_leds();
+        // reset_leds();
         return(NULL);
       }
     }
