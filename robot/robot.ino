@@ -1,6 +1,6 @@
 #include <Servo.h> //Biblioteka odpowiedzialna za serwa
 
-#include </home/marek/Projects/arduino/robot/program.h>
+#include </home/marek/Projects/arduino/robot/robot.h>
 
 
 class Motion {              // basic Motion class

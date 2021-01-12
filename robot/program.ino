@@ -1,4 +1,4 @@
-#include </home/marek/Projects/arduino/robot/program.h>
+#include </home/marek/Projects/arduino/robot/robot.h>
 
 
 /* General robot movements program structure:
@@ -28,15 +28,18 @@ Action script_1[] = {
 };
 
 Action script_2[] = {
-  {0, ARM, MOVE_TO, 179,  55, 50, NONE},
-  {1, ARM, MOVE_TO, 179, 150, 50, NONE},
-  {2, ARM, MOVE_TO, 150, 179, 50, NONE},
-  {3, ARM, MOVE_TO,  55, 179, 50, NONE},
-  {4, ARM, MOVE_TO,  55, 120, 50, NONE},
-  {5, ARM, MOVE_TO, 120,  55, 50, NONE},
-  {6, ARM, MOVE_TO, 179,  55, 50, NONE},
-  {7, ARM, MOVE_TO, 160,  97, 50, NONE},
-  {8, PROGRAM, STOP, NONE, NONE, NONE, NONE},
+  {0,  ARM, MOVE_TO, 179,  55, 50, NONE},
+  {1,  ARM, MOVE_TO, 179, 150, 50, NONE},
+  {2,  ARM, MOVE_TO, 150, 179, 50, NONE},
+  {3,  ARM, MOVE_TO,  55, 179, 50, NONE},
+  {4,  ARM, MOVE_TO,  55, 120, 50, NONE},
+  {5,  ARM, MOVE_TO, 120,  55, 50, NONE},
+  {6,  ARM, MOVE_TO, 179,  55, 50, NONE},
+  {7,  ARM, MOVE_TO, 160,  97, 50, NONE},
+  {8,  ARM, MOVE_TO, 160, 170, 50, NONE},
+  {9,  ARM, MOVE_TO, 160,  55, 50, NONE},
+  {10, ARM, MOVE_TO, 160,  97, 50, NONE},
+  {11, PROGRAM, STOP, NONE, NONE, NONE, NONE},
 };
 
 
