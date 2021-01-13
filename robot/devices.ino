@@ -2,6 +2,18 @@
 #include </home/marek/Projects/arduino/robot/robot.h>
 
 
+void Delay::set_delay(int del) {
+  counter = del;
+}
+
+int Delay::check_elapsed_time() {
+  if (counter > 0) {
+    return((--counter == 0)? STOPPED : MOVING);
+  }
+  else {
+    return(IDLE_STATE);
+  }
+}
 
 void Switch::init(int pin_nbr) {
   pin = pin_nbr;

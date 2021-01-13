@@ -14,13 +14,19 @@ Action script_0[] = {
   {2,  LED_GREEN, LED_BLINK,  300,  300, NONE,    0},
   {2,  ROTATION,  MOVE_TO,     45, NONE,   75, NONE},
   {3,  ARM,       MOVE_TO,    179,  150,   50, NONE},
+  {4,  LED_GREEN, LED_OFF,   NONE, NONE, NONE, NONE},
+  {4,  LED_RED,   LED_BLINK, 150,   150, NONE,    0},
   {4,  ROTATION,  MOVE_TO,    145, NONE,   75, NONE},
+  {4,  GRABBLER,  CYCLE_TO,    85, NONE,  200,    0},
+  {5,  LED_RED,   LED_OFF,   NONE, NONE, NONE, NONE},
+  {5,  LED_GREEN, LED_BLINK,  300,  300, NONE,    0},
   {5,  ARM,       MOVE_TO,    179,   55,   50, NONE},
   {6,  ROTATION,  MOVE_TO,     93, NONE,   75, NONE},
-  {7,  PROGRAM,   LOOP,      NONE, NONE, NONE, NONE},
-  {8,  LED_GREEN, LED_OFF,   NONE, NONE, NONE, NONE},
-  {8,  ARM,       MOVE_TO,    160,   97,   50, NONE},
-  {9,  PROGRAM,   STOP,      NONE, NONE, NONE, NONE},
+  {7,  STOPPAGE,  PAUSE,     1000, NONE, NONE, NONE},
+  {8,  PROGRAM,   LOOP,      NONE, NONE, NONE, NONE},
+  {9,  LED_GREEN, LED_OFF,   NONE, NONE, NONE, NONE},
+  {9,  ARM,       MOVE_TO,    160,   97,   50, NONE},
+  {10, PROGRAM,   STOP,      NONE, NONE, NONE, NONE},
 };
 
 Action script_1[] = {

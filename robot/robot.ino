@@ -14,6 +14,7 @@ Motion grabbler;
 Arm_Motion arm;
 
 Switch switch_1;
+Delay  interlude;
 
 LED led_red;
 LED led_green;
@@ -57,12 +58,13 @@ void loop() {
   int rotation_status = rotation.update_position();
   int grabbler_status = grabbler.update_position();
   int arm_status = arm.update_position();
+  int delay_status = interlude.check_elapsed_time();
   
   led_red.update_status();
   led_green.update_status();
   led_blue.update_status();
 
-  if (rotation_status == STOPPED or grabbler_status == STOPPED or arm_status == STOPPED) {
+  if (delay_status == STOPPED or rotation_status == STOPPED or grabbler_status == STOPPED or arm_status == STOPPED) {
     rotation.complete_cycle_and_stop();
     grabbler.complete_cycle_and_stop();
     arm.complete_cycle_and_stop();
@@ -124,6 +126,11 @@ void next_step() {
         break;
       case LED_BLUE:
         led = &led_blue;
+        break;
+      case STOPPAGE:
+        if (action_type == PAUSE) {
+          interlude.set_delay(pos_1);
+        }
         break;
       default:
         break;

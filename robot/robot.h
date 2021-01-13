@@ -23,6 +23,7 @@
 #define LED_RED     5
 #define LED_GREEN   6
 #define LED_BLUE    7
+#define STOPPAGE    8
 
 // scenario actions:
 #define STOP        1
@@ -33,6 +34,7 @@
 #define LED_BLINK   6
 #define SET_LOOP    7
 #define LOOP        8
+#define PAUSE       9
 
 #define NONE       -1
 
@@ -63,6 +65,13 @@ public:
   void blink(int, int, int);
   void update_status();
   int  get_status();
+};
+
+class Delay {
+  int counter = 0;
+public:
+  void set_delay(int);
+  int  check_elapsed_time();
 };
 
 
