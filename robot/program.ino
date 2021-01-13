@@ -9,7 +9,18 @@
 
 
 Action script_0[] = {
-  {10, PROGRAM,  STOP,    NONE, NONE, NONE, NONE},
+  {0,  ARM,       MOVE_TO,    179,   55,   50, NONE},
+  {1,  PROGRAM,   SET_LOOP,  NONE, NONE, NONE,    2},
+  {2,  LED_GREEN, LED_BLINK,  300,  300, NONE,    0},
+  {2,  ROTATION,  MOVE_TO,     45, NONE,   75, NONE},
+  {3,  ARM,       MOVE_TO,    179,  150,   50, NONE},
+  {4,  ROTATION,  MOVE_TO,    145, NONE,   75, NONE},
+  {5,  ARM,       MOVE_TO,    179,   55,   50, NONE},
+  {6,  ROTATION,  MOVE_TO,     93, NONE,   75, NONE},
+  {7,  PROGRAM,   LOOP,      NONE, NONE, NONE, NONE},
+  {8,  LED_GREEN, LED_OFF,   NONE, NONE, NONE, NONE},
+  {8,  ARM,       MOVE_TO,    160,   97,   50, NONE},
+  {9,  PROGRAM,   STOP,      NONE, NONE, NONE, NONE},
 };
 
 Action script_1[] = {
@@ -41,19 +52,25 @@ Action script_2[] = {
   {7,  ARM,       MOVE_TO,    160,   97,   50, NONE},
   {7,  LED_BLUE,  LED_OFF,   NONE, NONE, NONE, NONE},
   {7,  LED_GREEN, LED_BLINK,  300,  300, NONE,    0},
+  {7,  GRABBLER,  CYCLE_TO,   85,  NONE,  150,    0},
   {8,  ARM,       MOVE_TO,    160,  170,   50, NONE},
   {9,  ARM,       MOVE_TO,    160,   55,   50, NONE},
   {10, ARM,       MOVE_TO,    160,   97,   50, NONE},
+  {11, GRABBLER,  CYCLE_TO,   85,  NONE,  200,   50},
   {11, LED_GREEN, LED_OFF,   NONE, NONE, NONE, NONE}, 
-  {11, PROGRAM,   STOP,      NONE, NONE, NONE, NONE},
+  {11, LED_GREEN, LED_ON,    NONE, NONE, NONE, NONE},
+  {12, LED_GREEN, LED_OFF,   NONE, NONE, NONE, NONE},
+  {12, PROGRAM,   STOP,      NONE, NONE, NONE, NONE},
 };
+
 
 
 void Program::init(int prog_nbr) {
   row = 0;
   step_nbr = 0;
-  l1_cntr = 0;
-  l2_cntr = 0;
+  loop_cntr = 0;
+  loop_to_row = 0;
+  loop_to_step = 0;
   switch(prog_nbr) {
     case 1:
       scenario = script_1;
@@ -67,13 +84,41 @@ void Program::init(int prog_nbr) {
   }
 };
 
+void Program::wait(bool waiting_state) {
+  waiting = waiting_state;
+}
+
+bool Program::is_waiting() {
+  return(waiting);
+}
+
 
 Action* Program::get_action() {
   if (scenario[row].step_nbr == step_nbr) {
     if (scenario[row].device == PROGRAM) {
       if (scenario[row].action_type == STOP) {
-        // reset_leds();
         return(NULL);
+      }
+      if (scenario[row].action_type == SET_LOOP) {
+        loop_cntr = scenario[row].cycles;
+        loop_to_row = ++row;
+        loop_to_step = ++step_nbr;
+        waiting = true;
+        return(NULL);
+      }
+      if (scenario[row].action_type == LOOP) {
+        if (--loop_cntr > 0) {
+          row = loop_to_row;
+          step_nbr = loop_to_step;
+          waiting = true;
+          return(NULL);
+        }
+        else {
+          row++;
+          step_nbr++;
+          waiting = true;
+          return(NULL);
+        }
       }
     }
     else {

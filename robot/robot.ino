@@ -49,11 +49,11 @@ void setup()
  
 void loop() { 
   if (switch_1.pressed()) {
-    program.init(2);
+    program.init(0);
     next_step();
   }
 
-  static bool waiting_to_stop = false;
+  // static bool waiting_to_stop = false;
   int rotation_status = rotation.update_position();
   int grabbler_status = grabbler.update_position();
   int arm_status = arm.update_position();
@@ -66,12 +66,12 @@ void loop() {
     rotation.complete_cycle_and_stop();
     grabbler.complete_cycle_and_stop();
     arm.complete_cycle_and_stop();
-    waiting_to_stop = true;
+    program.wait(true);
   }
 
-  if (waiting_to_stop and rotation_status == IDLE_STATE and grabbler_status == IDLE_STATE and arm_status == IDLE_STATE) {
+  if (program.is_waiting() and rotation_status == IDLE_STATE and grabbler_status == IDLE_STATE and arm_status == IDLE_STATE) {
+    program.wait(false);
     next_step();
-    waiting_to_stop = false;
   }
   
   delay(1);

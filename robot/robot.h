@@ -31,6 +31,8 @@
 #define LED_OFF     4
 #define LED_ON      5
 #define LED_BLINK   6
+#define SET_LOOP    7
+#define LOOP        8
 
 #define NONE       -1
 
@@ -118,11 +120,15 @@ struct Action {
 class Program {
   int row = 0;
   int step_nbr = 0;
-  int l1_cntr = 0;
-  int l2_cntr = 0;
+  int loop_cntr = 0;
+  int loop_to_row = 0;
+  int loop_to_step = 0;
+  bool waiting = false;
   Action* scenario;
 public:
   void init(int);
+  void wait(bool);
+  bool is_waiting();
   Action* get_action();
 };
 
