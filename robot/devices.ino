@@ -2,11 +2,11 @@
 #include </home/marek/Projects/arduino/robot/robot.h>
 
 
-void Delay::set_delay(int del) {
+void Intermission::set_delay(int del) {
   counter = del;
 }
 
-int Delay::check_elapsed_time() {
+int Intermission::check_elapsed_time() {
   if (counter > 0) {
     return((--counter == 0)? STOPPED : MOVING);
   }
@@ -37,51 +37,98 @@ bool Switch::pressed() {
 
 void LED::init(int pin_nbr, bool high_on) {
   pin = pin_nbr;
-  on_is_high = high_on;
   pinMode(pin_nbr, OUTPUT);
-  turn_off(); 
+  on_is_high = high_on;
+  cycle_cntr = 0;
+  turn_off(false, NONE); 
 }
 
-void LED::turn_off() {
-  digitalWrite(pin, (on_is_high)? LOW : HIGH);
-  mode = IS_OFF;
-  is_on = false;
+void LED::turn_on(bool softly, int switching_time) {
+  soft_switching = softly;
+  if (soft_switching) {
+    mode = IS_SWITCHING_ON;
+    soft_cntr = 0;
+    soft_step = 255.0/float(switching_time);
+  }
+  else {
+    digitalWrite(pin, (on_is_high)? HIGH : LOW);
+    mode = IS_ON;
+  }
 }
 
-void LED::turn_on() {
-  digitalWrite(pin, (on_is_high)? HIGH : LOW);
-  mode = IS_ON;
-  is_on = true;
+void LED::turn_off(bool softly, int switching_time) {
+  soft_switching = softly;
+  if (soft_switching) {
+    mode = IS_SWITCHING_OFF;
+    soft_cntr = 0;
+    soft_step = 255.0/float(switching_time);
+  }
+  else {
+    digitalWrite(pin, (on_is_high)? LOW : HIGH);
+    mode = IS_OFF;
+  }
 }
 
-void LED::blink(int on_time, int off_time, int cycles) {
-  digitalWrite(pin, (on_is_high)? HIGH : LOW);
-  mode = IS_BLINKING;
+void LED::blink(bool softly, int on_time, int off_time, int cycles) {
+  soft_switching = softly;
   msec_on = on_time;
   msec_off = off_time;
-  is_on = true;
-  on_off_cntr = msec_on;
   cycle_cntr = cycles;
+  on_off_cntr = msec_on;
+  turn_on(softly, msec_on);
 }
 
 void LED::update_status() {
-
-  if (mode == IS_BLINKING and --on_off_cntr == 0) {
-    if (is_on) {
-      if (--cycle_cntr == 0) {
-        turn_off();
-      } else {
-        digitalWrite(pin, (on_is_high)? LOW : HIGH);
-        on_off_cntr = msec_off;
-        is_on = false;
+  if (mode == IS_SWITCHING_ON) {
+    int soft_level = round(float(soft_cntr) * soft_step);
+    soft_cntr  += 1;  // updating the counter must stay separately
+    if (on_is_high) {
+      soft_level = min(soft_level, 255);
+      if (soft_level == 255) {
+        mode = IS_ON;
       }
     }
     else {
-      digitalWrite(pin, (on_is_high)? HIGH : LOW);
-      on_off_cntr = msec_on;
-      is_on = true;
+      soft_level = max(255-soft_level, 0);
+      if (soft_level == 0) {
+        mode = IS_ON;
+      }
     }
+    analogWrite(pin, soft_level);
   }
+  else if (mode == IS_SWITCHING_OFF) {
+    int soft_level = 255 - round(float(soft_cntr) * soft_step);
+    soft_cntr  += 1;  // updating the counter must stay separately!
+    if (on_is_high) {
+      soft_level = max(soft_level, 0);
+      if (soft_level == 0) {
+        mode = IS_OFF;
+      }
+    } 
+    else {
+      soft_level = min(255-soft_level, 255);
+      if (soft_level == 255) {
+        mode = IS_OFF;
+      }
+    }
+    analogWrite(pin, soft_level);
+  }
+
+  if (cycle_cntr > 0 and --on_off_cntr == 0) {
+    if (mode == IS_ON) {
+      on_off_cntr = msec_off;
+      turn_off(soft_switching, msec_off);
+    }
+    else {
+      if (--cycle_cntr == 0) {
+        turn_off(false, NONE);
+      } 
+      else {
+        on_off_cntr = msec_on;
+        turn_on(soft_switching, msec_on);
+      }
+    }
+  } 
 }
 
 

@@ -2,43 +2,55 @@
 #ifndef Program_h
 #define Program_h
 
-#define IDLE_STATE -1
-#define MOVING      0
-#define BOUNCED     1
-#define STOPPED     2
 
 #define LEFT        0
 #define RIGHT       1
-
-// led status:  
-#define IS_OFF      0
-#define IS_ON       1
-#define IS_BLINKING 2
-
-// scenario devices:
-#define PROGRAM     1
-#define ROTATION    2
-#define GRABBLER    3
-#define ARM         4
-#define LED_RED     5
-#define LED_GREEN   6
-#define LED_BLUE    7
-#define STOPPAGE    8
-
-// scenario actions:
-#define STOP        1
-#define MOVE_TO     2
-#define CYCLE_TO    3
-#define LED_OFF     4
-#define LED_ON      5
-#define LED_BLINK   6
-#define SET_LOOP    7
-#define LOOP        8
-#define PAUSE       9
-
 #define NONE       -1
 
+
+enum devices {    // scenario devices
+  PROGRAM = 1, 
+  ROTATION,
+  GRABBLER,
+  ARM,
+  LED_RED,
+  LED_GREEN,
+  LED_BLUE,
+  STOPPAGE,
+};
+
+enum actions {    // scenario actions
+  STOP,
+  SET_LOOP,
+  LOOP,
+  PAUSE,
+  JUMP_TO,
+  GET_INPUT,
+  MOVE_TO,
+  CYCLE_TO,
+  LED_ON,
+  LED_ON_SOFT,
+  LED_OFF,
+  LED_OFF_SOFT,
+  LED_BLINK,
+  LED_BLINK_SOFT,
+};
+
+enum state {      // device status
+  IDLE_STATE = -1,
+  MOVING,
+  BOUNCED,
+  STOPPED,
+  IS_OFF,
+  IS_ON,
+  IS_SWITCHING_ON,
+  IS_SWITCHING_OFF,
+  IS_BLINKING,
+};
+
+
 void next_step();
+
 
 class Switch {
   int  pin;
@@ -50,24 +62,27 @@ public:
 
 
 class LED {
-  int  pin;
-  int  mode;
-  int  msec_on;
-  int  msec_off;
-  int  on_off_cntr;
-  int  cycle_cntr;
-  bool is_on;
-  bool on_is_high;
+  int   pin;
+  int   mode;
+  int   msec_on;
+  int   msec_off;
+  int   on_off_cntr;
+  int   cycle_cntr;
+  int   soft_cntr;
+  float soft_step;
+  bool  soft_switching;
+  bool  on_is_high;
 public:
   void init(int, bool);
-  void turn_off();
-  void turn_on();
-  void blink(int, int, int);
+  void turn_off(bool, int);
+  void turn_on(bool, int);
+  void blink(bool, int, int, int);
   void update_status();
   int  get_status();
 };
 
-class Delay {
+
+class Intermission {
   int counter = 0;
 public:
   void set_delay(int);
@@ -85,7 +100,7 @@ class Motion {              // basic Motion class
   int   upper_bound;        // stop/change movement direction when servo is at this upper_bound position
   bool  changed_position;   // used for properly counting movement cycles
   int   cycle_cntr;         // periodic movement cycle counter
-  int   max_cycles;         // 1: single move, 0: unlimited periodic movemnt, > 1: limited number of cycles
+  int   max_cycles;         // 1: single move, 0: unlimited periodic movemnt, > 1: specified number of cycles
   Servo *servo;             // servo pointer  
 
   void elementary_move(int bounce_pos, int stop_pos, float velocity);
@@ -133,8 +148,9 @@ class Program {
   int loop_to_row = 0;
   int loop_to_step = 0;
   bool waiting = false;
-  Action* scenario;
+  // Action* scenario;     TODO
 public:
+  Action* scenario;
   void init(int);
   void wait(bool);
   bool is_waiting();

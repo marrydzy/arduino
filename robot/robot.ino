@@ -13,13 +13,12 @@ Motion rotation;
 Motion grabbler;
 Arm_Motion arm;
 
-Switch switch_1;
-Delay  interlude;
+Switch        switch_1;
+Intermission  halt;
 
 LED led_red;
 LED led_green;
 LED led_blue;
-
 
 Program program;
 
@@ -27,38 +26,31 @@ void setup()
 { 
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
-
-  /*
-  pinMode(LED_RED, OUTPUT);
-  pinMode(LED_GREEN, OUTPUT);
-  pinMode(LED_BLUE, OUTPUT);
-  digitalWrite(LED_RED, HIGH);
-  digitalWrite(LED_GREEN, HIGH);
-  digitalWrite(LED_BLUE, HIGH);
-  */
-  
   rotation.init(93, &servo_rotation, 9);
-  grabbler.init(65, &servo_grabbler, 6);
+  grabbler.init(72, &servo_grabbler, 6);
   arm.init(160, &servo_left, 10, 97, &servo_right, 11);
   switch_1.init(7);
   led_red.init(3, false);
   led_green.init(4, false);
   led_blue.init(2, false);
-  // Serial.begin(9600);
+  Serial.begin(9600);
 } 
 
  
 void loop() { 
   if (switch_1.pressed()) {
-    program.init(0);
+    program.init(2);              // TODO 
+    // int level = analogRead(A0);
+    // Serial.println(level);
+    // program.scenario[2].pos_1 = 5 * level;
+    // program.scenario[4].pos_1 = level;
     next_step();
   }
 
-  // static bool waiting_to_stop = false;
   int rotation_status = rotation.update_position();
   int grabbler_status = grabbler.update_position();
   int arm_status = arm.update_position();
-  int delay_status = interlude.check_elapsed_time();
+  int delay_status = halt.check_elapsed_time();
   
   led_red.update_status();
   led_green.update_status();
@@ -129,7 +121,7 @@ void next_step() {
         break;
       case STOPPAGE:
         if (action_type == PAUSE) {
-          interlude.set_delay(pos_1);
+          halt.set_delay(pos_1);
         }
         break;
       default:
@@ -138,14 +130,23 @@ void next_step() {
  
     if (led) {
       switch(action_type) {
-        case LED_OFF:
-          led->turn_off();
-          break;
         case LED_ON:
-          led->turn_on();
+          led->turn_on(false, NONE);
+          break;
+        case LED_OFF:
+          led->turn_off(false, NONE);
+          break;
+        case LED_ON_SOFT:
+          led->turn_on(true, pos_1);
+          break;
+        case LED_OFF_SOFT:
+          led->turn_off(true, pos_1);
           break;
         case LED_BLINK:
-          led->blink(pos_1, pos_2, cycles);
+          led->blink(false, pos_1, pos_2, cycles);
+          break;
+        case LED_BLINK_SOFT:
+          led->blink(true, pos_1, pos_2, cycles);
           break;
       }
       led = NULL;
