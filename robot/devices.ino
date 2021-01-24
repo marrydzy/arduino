@@ -8,10 +8,10 @@ void Intermission::set_delay(int del) {
 
 int Intermission::check_elapsed_time() {
   if (counter > 0) {
-    return((--counter == 0)? STOPPED : MOVING);
+    return (--counter == 0)? STOPPED : MOVING;
   }
   else {
-    return(IDLE_STATE);
+    return IDLE_STATE;
   }
 }
 
@@ -28,10 +28,10 @@ bool Switch::pressed() {
   else {
     if (was_pressed) {
       was_pressed = false;
-      return(true);
+      return true;
     }
   }
-  return(false);
+  return false;
 }
 
 
@@ -57,6 +57,7 @@ void LED::turn_on(bool softly, int switching_time) {
 }
 
 void LED::turn_off(bool softly, int switching_time) {
+  cycle_cntr = 0;
   soft_switching = softly;
   if (soft_switching) {
     mode = IS_SWITCHING_OFF;
@@ -114,10 +115,12 @@ void LED::update_status() {
     analogWrite(pin, soft_level);
   }
 
-  if (cycle_cntr > 0 and --on_off_cntr == 0) {
+  if (cycle_cntr != 0 and --on_off_cntr == 0) {
     if (mode == IS_ON) {
       on_off_cntr = msec_off;
+      int tmp = cycle_cntr;
       turn_off(soft_switching, msec_off);
+      cycle_cntr = tmp;
     }
     else {
       if (--cycle_cntr == 0) {
@@ -139,7 +142,7 @@ void Motion::synchronize() {
 }
 
 int Motion::get_position() {
-  return(servo_position);
+  return servo_position;
 }
 
 // force stopping after completing the current cycle of the movement
@@ -226,7 +229,7 @@ int Motion::update_position() {
       }
     }
   }
-  return(ret_value);
+  return ret_value;
 }
 
 
@@ -268,7 +271,7 @@ int Arm_Motion::update_position() {
       ptr_slave->stop_moving(); 
     }
   }
-  return(master_status);
+  return master_status;
 }
 
 // move from the current position to the destination one (and stop there)

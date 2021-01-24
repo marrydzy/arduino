@@ -11,10 +11,23 @@ Action script_0[] = {
   {4,  PROGRAM,   STOP,         NONE, NONE, NONE, NONE},
 };
 
-Action script_1[] = {
-  {0,  LED_RED,   LED_BLINK_SOFT, 2000, 2000, NONE,   10},
-  {0,  STOPPAGE,  PAUSE,         28000, NONE, NONE, NONE},
-  {4,  PROGRAM,   STOP,           NONE, NONE, NONE, NONE},
+Action script_1[] = { 
+  {0,  LED_BLUE,  LED_ON,         NONE, NONE, NONE, NONE},
+  {0,  ROTATION,  MOVE_TO,         133, NONE,   80, NONE}, 
+  {1,  ROTATION,  CYCLE_TO,         53, NONE,   80,    3},
+  {2,  ROTATION,  MOVE_TO,          93, NONE,   80, NONE},
+  {3,  LED_BLUE,  LED_OFF,        NONE, NONE, NONE, NONE},
+  {3,  PROGRAM,   SET_LOOP,       NONE, NONE, NONE,    2},
+  {4,  LED_GREEN, LED_ON,         NONE, NONE, NONE, NONE},
+  {4,  GRABBLER,  CYCLE_TO,         85, NONE,  150,   10},
+  {5,  LED_GREEN, LED_OFF,        NONE, NONE, NONE, NONE}, 
+  {5,  LED_RED,   LED_ON,         NONE, NONE, NONE, NONE},     
+  {5,  ARM,       MOVE_TO,         120,  120,   70, NONE},
+  {6,  ARM,       CYCLE_TO,        160,  170,   70,    5}, 
+  {7,  LED_RED,   LED_OFF,        NONE, NONE, NONE, NONE},
+  {7,  ARM,       MOVE_TO,         160,   97,   40, NONE},
+  {8,  PROGRAM,   LOOP,           NONE, NONE, NONE, NONE},  
+  {9,  PROGRAM,   STOP,           NONE, NONE, NONE, NONE},
 };
 
 
@@ -37,7 +50,7 @@ void Program::wait(bool waiting_state) {
 }
 
 bool Program::is_waiting() {
-  return(waiting);
+  return waiting;
 }
 
 
@@ -81,14 +94,14 @@ Action* Program::get_action() {
           waiting = true;
           break;
       }
-    return(NULL); 
+    return NULL; 
     }
     else {
-      return(&scenario[row++]);
+      return &scenario[row++];
     }
   }
   else {
     step_nbr++;
-    return(NULL);
+    return NULL;
   }
 };
