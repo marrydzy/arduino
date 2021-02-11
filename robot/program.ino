@@ -1,33 +1,77 @@
 #include </home/marek/Projects/arduino/robot/robot.h>
 
 
+/* 
 Action script_0[] = {
-  {0,  PROGRAM,   SET_LOOP,     NONE, NONE, NONE,   10},
+  {0,  PROGRAM,   SET_LOOP,     NONE, NONE, NONE,    2},
   {1,  LED_RED,   LED_ON_SOFT,  3000, NONE, NONE, NONE},
   {1,  STOPPAGE,  PAUSE,        3000, NONE, NONE, NONE},
   {2,  LED_RED,   LED_OFF_SOFT, 3000, NONE, NONE, NONE},
-  {2,  STOPPAGE,  PAUSE,        3000, NONE, NONE, NONE},
+  {2,  STOPPAGE,  PAUSE,        5000, NONE, NONE, NONE},
   {3,  PROGRAM,   LOOP,         NONE, NONE, NONE, NONE},
-  {4,  PROGRAM,   STOP,         NONE, NONE, NONE, NONE},
+  {4,  LED_RED,   LED_BLINK_SOFT, 1000, 1000, NONE, -1},
+  {4,  STOPPAGE,  PAUSE,       10000, NONE, NONE, NONE},
+  {5,  LED_RED,   LED_OFF,      NONE, NONE, NONE, NONE},
+  {5,  PROGRAM,   STOP,         NONE, NONE, NONE, NONE},
 };
 
 Action script_1[] = { 
-  {0,  LED_BLUE,  LED_ON,         NONE, NONE, NONE, NONE},
-  {0,  ROTATION,  MOVE_TO,         133, NONE,   80, NONE}, 
-  {1,  ROTATION,  CYCLE_TO,         53, NONE,   80,    3},
-  {2,  ROTATION,  MOVE_TO,          93, NONE,   80, NONE},
-  {3,  LED_BLUE,  LED_OFF,        NONE, NONE, NONE, NONE},
-  {3,  PROGRAM,   SET_LOOP,       NONE, NONE, NONE,    2},
-  {4,  LED_GREEN, LED_ON,         NONE, NONE, NONE, NONE},
-  {4,  GRABBLER,  CYCLE_TO,         85, NONE,  150,   10},
-  {5,  LED_GREEN, LED_OFF,        NONE, NONE, NONE, NONE}, 
-  {5,  LED_RED,   LED_ON,         NONE, NONE, NONE, NONE},     
-  {5,  ARM,       MOVE_TO,         120,  120,   70, NONE},
-  {6,  ARM,       CYCLE_TO,        160,  170,   70,    5}, 
-  {7,  LED_RED,   LED_OFF,        NONE, NONE, NONE, NONE},
-  {7,  ARM,       MOVE_TO,         160,   97,   40, NONE},
-  {8,  PROGRAM,   LOOP,           NONE, NONE, NONE, NONE},  
-  {9,  PROGRAM,   STOP,           NONE, NONE, NONE, NONE},
+  {0,  LED_BLUE,      LED_BLINK,       100,  400, NONE,   -1},
+  {0,  ARM,           MOVE_TO,         60,   140,   70, NONE},
+  {0,  ROTATION,      MOVE_TO,         163, NONE,  100, NONE},
+  {1,  PHOTO_SENSOR,  ACTIVATE,       NONE, NONE, NONE, NONE},
+  {1,  ROTATION,      MOVE_TO,          23, NONE,  100, NONE},
+  {2,  PHOTO_SENSOR,  STOP,           NONE, NONE, NONE, NONE},
+  {2,  ROTATION,      MOVE_TO,          93, NONE,  100, NONE},
+  {3,  LED_BLUE,      LED_OFF,        NONE, NONE, NONE, NONE},
+  {3,  PROGRAM,       SET_LOOP,       NONE, NONE, NONE,    2},
+  {4,  LED_GREEN,     LED_ON,         NONE, NONE, NONE, NONE},
+  {4,  GRABBLER,      CYCLE_TO,         67, NONE,  200,   20},
+  {5,  LED_GREEN,     LED_OFF,        NONE, NONE, NONE, NONE}, 
+  {5,  LED_RED,       LED_BLINK,       300,  150, NONE,   -1},     
+  {5,  ARM,           MOVE_TO,         120,  120,   70, NONE},
+  {6,  ARM,           CYCLE_TO,        150,  179,   70,    2}, 
+  {7,  LED_RED,       LED_OFF,        NONE, NONE, NONE, NONE},
+  {7,  ARM,           MOVE_TO,         160,   97,   40, NONE},
+  {8,  PROGRAM,       LOOP,           NONE, NONE, NONE, NONE},  
+  {9,  LED_RED,       LED_BLINK_SOFT,  100,  100, NONE,   -1},
+  {9,  STOPPAGE,      PAUSE,           400, NONE, NONE, NONE},
+  {10, LED_RED,       LED_OFF,        NONE, NONE, NONE, NONE},
+  {10, PROGRAM,       STOP,           NONE, NONE, NONE, NONE},
+};
+*/
+
+Action script_0[] = {
+  {0,  PROGRAM,   SET_LOOP,         NONE, NONE, NONE,    5},
+  {1,  LED_RED,   LED_ON_SOFT,      1000, NONE, NONE, NONE},
+  {1,  STOPPAGE,  PAUSE,            1000, NONE, NONE, NONE},
+  {2,  LED_RED,   LED_OFF_SOFT,     1000, NONE, NONE, NONE},
+  {2,  STOPPAGE,  PAUSE,            1000, NONE, NONE, NONE},
+  {3,  PROGRAM,   LOOP,             NONE, NONE, NONE, NONE},
+  {4,  LED_RED,   LED_BLINK_SOFT,    200, 1800, NONE,   -1},
+  {4,  STOPPAGE,  PAUSE,           20000, NONE, NONE, NONE},
+  {5,  LED_RED,   LED_OFF,          NONE, NONE, NONE, NONE},
+  {5,  PROGRAM,   JUMP_TO,             2, NONE, NONE, NONE},
+};
+
+
+Action script_1[] = { 
+  {0,  LED_BLUE,      LED_BLINK,       100,  400, NONE,   -1},
+  {0,  ARM,           MOVE_TO,         60,   140,   70, NONE},
+  {0,  ROTATION,      MOVE_TO,         163, NONE,  100, NONE},
+  {1,  PHOTO_SENSOR,  ACTIVATE,       NONE, NONE, NONE, NONE},
+  {1,  ROTATION,      MOVE_TO,          23, NONE,   50, NONE},
+  {2,  PHOTO_SENSOR,  STOP,           NONE, NONE, NONE, NONE},
+  {2,  ROTATION,      MOVE_TO,           0, NONE,  100, NONE},
+  {3,  LED_BLUE,      LED_OFF,        NONE, NONE, NONE, NONE},
+  {3,  LED_GREEN,     LED_ON,         NONE, NONE, NONE, NONE},
+  {3,  GRABBLER,      CYCLE_TO,         67, NONE,  200,   20},
+  {4,  LED_GREEN,     LED_OFF,        NONE, NONE, NONE, NONE}, 
+  {4,  LED_RED,       LED_BLINK,       300,  150, NONE,   -1},     
+  {4,  ARM,           MOVE_TO,         160,   97,   40, NONE},
+  {4,  ROTATION,      MOVE_TO,          98, NONE,   50, NONE},
+  {5,  LED_RED,       LED_OFF,        NONE, NONE, NONE, NONE},
+  {5,  PROGRAM,       STOP,           NONE, NONE, NONE, NONE},
 };
 
 

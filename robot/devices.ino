@@ -2,20 +2,56 @@
 #include </home/marek/Projects/arduino/robot/robot.h>
 
 
-void Intermission::set_delay(int del) {
-  counter = del;
+void PhotoSensor::init(int pin_nbr, Motion* srv) {
+  pin = pin_nbr;
+  servo = srv;
+  servo_pos = 0;
+  max_level = 0;
+  active = false;
+}
+
+void PhotoSensor::find_max_pos() {
+  servo_pos = 0;
+  max_level = 0;
+  active = true;
+}
+
+void PhotoSensor::measure() {
+  if (active) {
+    int level = analogRead(pin);
+    if (level > max_level) {
+      max_level = level;
+      servo_pos = servo->get_position();
+    }
+  }
+}
+
+uint8_t PhotoSensor::get_max_pos() {
+  active = false;
+  return servo_pos;
+}
+
+
+void Intermission::set_delay(unsigned long del) {
+  delay_ms = del;
+  start_time = millis();
 }
 
 int Intermission::check_elapsed_time() {
-  if (counter > 0) {
-    return (--counter == 0)? STOPPED : MOVING;
+  if (delay_ms == 0) {
+    return IDLE_STATE;
+  }
+  if (millis() - start_time >= delay_ms) {
+    delay_ms = 0;
+    return STOPPED;
   }
   else {
-    return IDLE_STATE;
+    return MOVING;
   }
 }
 
-void Switch::init(int pin_nbr) {
+
+void Switch::init(uint8_t pin_nbr) {
   pin = pin_nbr;
   pinMode(pin, INPUT_PULLUP);
   was_pressed = false;
@@ -35,11 +71,15 @@ bool Switch::pressed() {
 }
 
 
-void LED::init(int pin_nbr, bool high_on) {
+void LED::init(uint8_t pin_nbr, bool high_on) {
   pin = pin_nbr;
   pinMode(pin_nbr, OUTPUT);
   on_is_high = high_on;
   cycle_cntr = 0;
+  msec_on = 0UL;
+  msec_off = 0UL;
+  phase_time = 0UL;
+  start_time = 0UL;
   turn_off(false, NONE); 
 }
 
@@ -47,7 +87,7 @@ void LED::turn_on(bool softly, int switching_time) {
   soft_switching = softly;
   if (soft_switching) {
     mode = IS_SWITCHING_ON;
-    soft_cntr = 0;
+    start_time = millis();
     soft_step = 255.0/float(switching_time);
   }
   else {
@@ -61,7 +101,7 @@ void LED::turn_off(bool softly, int switching_time) {
   soft_switching = softly;
   if (soft_switching) {
     mode = IS_SWITCHING_OFF;
-    soft_cntr = 0;
+    start_time = millis();
     soft_step = 255.0/float(switching_time);
   }
   else {
@@ -70,19 +110,19 @@ void LED::turn_off(bool softly, int switching_time) {
   }
 }
 
-void LED::blink(bool softly, int on_time, int off_time, int cycles) {
+void LED::blink(bool softly, unsigned long on_time, unsigned long off_time, int cycles) {
   soft_switching = softly;
   msec_on = on_time;
   msec_off = off_time;
   cycle_cntr = cycles;
-  on_off_cntr = msec_on;
+  phase_time = msec_on;
+  start_time = millis();
   turn_on(softly, msec_on);
 }
 
 void LED::update_status() {
   if (mode == IS_SWITCHING_ON) {
-    int soft_level = round(float(soft_cntr) * soft_step);
-    soft_cntr  += 1;  // updating the counter must stay separately
+    int soft_level = round(float(millis()-start_time) * soft_step);
     if (on_is_high) {
       soft_level = min(soft_level, 255);
       if (soft_level == 255) {
@@ -98,8 +138,7 @@ void LED::update_status() {
     analogWrite(pin, soft_level);
   }
   else if (mode == IS_SWITCHING_OFF) {
-    int soft_level = 255 - round(float(soft_cntr) * soft_step);
-    soft_cntr  += 1;  // updating the counter must stay separately!
+    int soft_level = 255 - round(float(millis()-start_time) * soft_step);
     if (on_is_high) {
       soft_level = max(soft_level, 0);
       if (soft_level == 0) {
@@ -115,19 +154,21 @@ void LED::update_status() {
     analogWrite(pin, soft_level);
   }
 
-  if (cycle_cntr != 0 and --on_off_cntr == 0) {
+  if (cycle_cntr != 0 and millis() - start_time >= phase_time ) {
     if (mode == IS_ON) {
-      on_off_cntr = msec_off;
+      phase_time = msec_off;
+      start_time = millis();
       int tmp = cycle_cntr;
       turn_off(soft_switching, msec_off);
       cycle_cntr = tmp;
     }
     else {
-      if (--cycle_cntr == 0) {
+      if (cycle_cntr > 0 and --cycle_cntr == 0) {
         turn_off(false, NONE);
       } 
       else {
-        on_off_cntr = msec_on;
+        phase_time = msec_on;
+        start_time = millis();
         turn_on(soft_switching, msec_on);
       }
     }
@@ -170,7 +211,7 @@ void Motion::init(int pos, Servo *srv, int pin) {
 }
 
 // elementary move from the current position to stop_pos with/without bouncing at bounce_pos
-void Motion::elementary_move(int bounce_pos, int stop_pos, float velocity) {
+void Motion::elementary_move(uint8_t bounce_pos, uint8_t stop_pos, float velocity) {
   location = (float)servo_position;
   move_direction = (bounce_pos > servo_position)? HIGH : LOW;
   lower_bound = (move_direction == HIGH)? servo_position : bounce_pos;

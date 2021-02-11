@@ -13,6 +13,8 @@ Motion rotation;
 Motion grabbler;
 Arm_Motion arm;
 
+PhotoSensor   photoSensor;
+
 Switch        switch_1;
 Intermission  halt;
 
@@ -27,26 +29,28 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
   rotation.init(93, &servo_rotation, 9);
-  grabbler.init(72, &servo_grabbler, 6);
+  grabbler.init(85, &servo_grabbler, 6);
   arm.init(160, &servo_left, 10, 97, &servo_right, 11);
   switch_1.init(7);
   led_red.init(3, false);
   led_green.init(4, false);
   led_blue.init(2, false);
-  Serial.begin(9600);
+  photoSensor.init(A0, &rotation);
+  // Serial.begin(9600);
+  // Serial.println(A0);
 } 
 
  
 void loop() { 
   if (switch_1.pressed()) {
-    program.init(2);              // TODO 
-    // int level = analogRead(A0);
-    // Serial.println(level);
+    program.init(1);              // TODO 
     // program.scenario[2].pos_1 = 5 * level;
     // program.scenario[4].pos_1 = level;
     next_step();
   }
 
+  photoSensor.measure();
+  
   int rotation_status = rotation.update_position();
   int grabbler_status = grabbler.update_position();
   int arm_status = arm.update_position();
@@ -75,6 +79,7 @@ void loop() {
 void next_step() {
   Action* action = program.get_action();
   LED* led = NULL;
+  int  position_found = -1;
   
   while(action) {
     int   device = action->device;
@@ -85,8 +90,10 @@ void next_step() {
     int   cycles = action->cycles;
 
     switch(device) {
-      
       case ROTATION:
+        if (position_found >= 0) {
+          pos_1 = position_found;
+        }
         if (action_type == MOVE_TO) {
           rotation.move_to(pos_1, velocity);
         }
@@ -122,6 +129,14 @@ void next_step() {
       case STOPPAGE:
         if (action_type == PAUSE) {
           halt.set_delay(pos_1);
+        }
+        break;
+      case PHOTO_SENSOR:
+        if (action_type == ACTIVATE) {
+          photoSensor.find_max_pos();
+        }
+        else if (action_type == STOP) {
+          position_found = photoSensor.get_max_pos();
         }
         break;
       default:
